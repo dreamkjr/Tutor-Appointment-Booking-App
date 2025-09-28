@@ -1,7 +1,11 @@
 // Icon components for the application
 import React from 'react';
 
-export const CalendarIcon = ({ className = 'w-6 h-6' }) => (
+interface IconProps {
+  className?: string;
+}
+
+export const CalendarIcon: React.FC<IconProps> = ({ className = 'w-6 h-6' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -19,7 +23,7 @@ export const CalendarIcon = ({ className = 'w-6 h-6' }) => (
   </svg>
 );
 
-export const ClockIcon = ({ className = 'w-6 h-6' }) => (
+export const ClockIcon: React.FC<IconProps> = ({ className = 'w-6 h-6' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -35,7 +39,7 @@ export const ClockIcon = ({ className = 'w-6 h-6' }) => (
   </svg>
 );
 
-export const EditIcon = ({ className = 'w-4 h-4' }) => (
+export const EditIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -51,7 +55,7 @@ export const EditIcon = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
-export const TrashIcon = ({ className = 'w-4 h-4' }) => (
+export const TrashIcon: React.FC<IconProps> = ({ className = 'w-4 h-4' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -67,7 +71,7 @@ export const TrashIcon = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
-export const AlertTriangleIcon = ({ className = 'w-6 h-6' }) => (
+export const AlertTriangleIcon: React.FC<IconProps> = ({ className = 'w-6 h-6' }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"

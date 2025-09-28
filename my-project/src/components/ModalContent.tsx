@@ -3,8 +3,16 @@ import React from 'react';
 import { formatDateHeader, formatTime } from '../utils/dateUtils';
 import { CalendarIcon, ClockIcon, AlertTriangleIcon } from './ui/Icons';
 import TimeSlotPicker from './TimeSlotPicker';
+import type { TimeSlot, Appointment } from '../types/index';
 
-export const BookingConfirmationModal = ({
+interface BookingConfirmationModalProps {
+  slot: TimeSlot;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
   slot,
   onConfirm,
   onCancel,
@@ -55,7 +63,14 @@ export const BookingConfirmationModal = ({
   </div>
 );
 
-export const EditBookingModal = ({
+interface EditBookingModalProps {
+  booking: Appointment;
+  availableSlots: TimeSlot[];
+  onSelectSlot: (slot: TimeSlot) => void;
+  loading: boolean;
+}
+
+export const EditBookingModal: React.FC<EditBookingModalProps> = ({
   booking,
   availableSlots,
   onSelectSlot,
@@ -85,7 +100,15 @@ export const EditBookingModal = ({
   </div>
 );
 
-export const RescheduleConfirmationModal = ({
+interface RescheduleConfirmationModalProps {
+  originalBooking: Appointment;
+  newSlot: TimeSlot;
+  onConfirm: () => void;
+  onBack: () => void;
+  loading: boolean;
+}
+
+export const RescheduleConfirmationModal: React.FC<RescheduleConfirmationModalProps> = ({
   originalBooking,
   newSlot,
   onConfirm,
@@ -144,7 +167,14 @@ export const RescheduleConfirmationModal = ({
   </div>
 );
 
-export const CancelConfirmationModal = ({
+interface CancelConfirmationModalProps {
+  booking: Appointment;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}
+
+export const CancelConfirmationModal: React.FC<CancelConfirmationModalProps> = ({
   booking,
   onConfirm,
   onCancel,

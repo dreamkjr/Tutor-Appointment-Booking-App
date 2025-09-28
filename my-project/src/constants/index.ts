@@ -1,5 +1,6 @@
-// Application styles and global CSS constants
-export const GLOBAL_STYLES = `
+// Application styles and global CSS constants with TypeScript type safety
+
+export const GLOBAL_STYLES: string = `
   @keyframes fade-in { 
     0% { opacity: 0; } 
     100% { opacity: 1; } 
@@ -22,4 +23,18 @@ export const ERROR_MESSAGES = {
   BOOK_APPOINTMENT: 'Failed to book appointment. Please try again.',
   UPDATE_APPOINTMENT: 'Failed to update appointment. Please try again.',
   CANCEL_APPOINTMENT: 'Failed to cancel appointment. Please try again.',
-};
+} as const;
+
+export const API_ENDPOINTS = {
+  APPOINTMENTS: '/appointments',
+  AVAILABLE_SLOTS: '/appointments/available-slots',
+  HEALTH: '/health',
+} as const;
+
+export const DEFAULT_STUDENT_ID: number = 1;
+
+export const TIME_SLOTS = {
+  START_HOUR: 9,
+  END_HOUR: 17,
+  SLOT_DURATION_MINUTES: 60,
+} as const;

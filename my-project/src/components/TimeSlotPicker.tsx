@@ -2,10 +2,22 @@
 import React, { useMemo } from 'react';
 import { formatDateHeader, formatTime } from '../utils/dateUtils';
 import { CalendarIcon } from './ui/Icons';
+import type { TimeSlot } from '../types/index';
 
-const TimeSlotPicker = ({ availableSlots, onSelectSlot, loading = false }) => {
+interface TimeSlotPickerProps {
+  availableSlots: TimeSlot[];
+  onSelectSlot: (slot: TimeSlot) => void;
+  loading?: boolean;
+}
+
+interface DayGroup {
+  date: Date;
+  slots: TimeSlot[];
+}
+
+const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ availableSlots, onSelectSlot, loading = false }) => {
   const slotsByDay = useMemo(() => {
-    const grouped = {};
+    const grouped: Record<string, DayGroup> = {};
 
     availableSlots.forEach((slot) => {
       const date = new Date(slot.dateTime);
@@ -22,7 +34,7 @@ const TimeSlotPicker = ({ availableSlots, onSelectSlot, loading = false }) => {
     });
 
     // Convert to array and sort by date
-    return Object.values(grouped).sort((a, b) => a.date - b.date);
+    return Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [availableSlots]);
 
   if (loading) {
@@ -50,13 +62,13 @@ const TimeSlotPicker = ({ availableSlots, onSelectSlot, loading = false }) => {
 
   return (
     <div className="space-y-6">
-      {slotsByDay.map(({ date, slots }) => (
+      {slotsByDay.map(({ date, slots }: DayGroup) => (
         <div key={date.toISOString()}>
           <h3 className="text-lg font-semibold text-gray-700 pb-2 border-b mb-3">
             {formatDateHeader(date)}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {slots.map((slot) => (
+            {slots.map((slot: TimeSlot) => (
               <button
                 key={slot.id}
                 onClick={() => (slot.isBooked ? null : onSelectSlot(slot))}

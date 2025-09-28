@@ -1,8 +1,14 @@
 // Navigation tabs component
 import React from 'react';
+import type { TabType } from '../types/index';
 
-const TabNavigation = ({ activeTab, onTabChange }) => {
-  const tabs = [
+interface TabNavigationProps {
+  activeTab: TabType;
+  onTabChange: (tabId: TabType) => void;
+}
+
+const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
+  const tabs: Array<{ id: TabType; label: string }> = [
     { id: 'booking', label: 'Booking' },
     { id: 'mybookings', label: 'My Bookings' },
   ];

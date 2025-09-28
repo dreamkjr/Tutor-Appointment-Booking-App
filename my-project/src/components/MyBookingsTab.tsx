@@ -2,11 +2,19 @@
 import React from 'react';
 import { formatDateHeader, formatTime } from '../utils/dateUtils';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon } from './ui/Icons';
+import type { Appointment } from '../types/index';
 
-const MyBookingsTab = ({ myBookings, onEdit, onCancel, loading }) => {
+interface MyBookingsTabProps {
+  myBookings: Appointment[];
+  onEdit: (booking: Appointment) => void;
+  onCancel: (booking: Appointment) => void;
+  loading: boolean;
+}
+
+const MyBookingsTab: React.FC<MyBookingsTabProps> = ({ myBookings, onEdit, onCancel, loading }) => {
   // Sort bookings chronologically
   const sortedBookings = [...myBookings].sort(
-    (a, b) => new Date(a.dateTime) - new Date(b.dateTime)
+    (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
   );
 
   if (loading) {

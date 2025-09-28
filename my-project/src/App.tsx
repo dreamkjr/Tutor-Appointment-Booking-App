@@ -13,9 +13,10 @@ import {
 import { useAppointments } from './hooks/useAppointments';
 import { useModal } from './hooks/useModal';
 import { GLOBAL_STYLES } from './constants';
+import type { TimeSlot, Appointment, TabType } from './types/index';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('booking');
+export default function App(): React.JSX.Element {
+  const [activeTab, setActiveTab] = useState<TabType>('booking');
 
   // Custom hooks for business logic
   const {
@@ -39,15 +40,15 @@ export default function App() {
   } = useModal();
 
   // Event handlers
-  const handleBookAppointment = (slot) => {
+  const handleBookAppointment = (slot: TimeSlot): void => {
     openModal('confirmBooking', slot);
   };
 
-  const handleEditAppointment = (booking) => {
+  const handleEditAppointment = (booking: Appointment): void => {
     openModal('editBooking', booking);
   };
 
-  const handleCancelAppointment = (booking) => {
+  const handleCancelAppointment = (booking: Appointment): void => {
     openModal('confirmCancel', booking);
   };
 
@@ -101,7 +102,7 @@ export default function App() {
           <EditBookingModal
             booking={data}
             availableSlots={availableSlots}
-            onSelectSlot={(newSlot) => handleSlotSelectionForEdit(newSlot, data)}
+            onSelectSlot={(newSlot: TimeSlot) => handleSlotSelectionForEdit(newSlot, data)}
             loading={loading.slots}
           />
         );

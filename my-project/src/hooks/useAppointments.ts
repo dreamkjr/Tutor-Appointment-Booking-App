@@ -1,17 +1,33 @@
 // Custom hook for managing appointments data and operations
 import { useState, useEffect } from 'react';
 import apiService from '../services/apiService';
-import { formatDateTimeForAPI } from '../utils/dateUtils';
+import type { Appointment, TimeSlot } from '../types/index';
+import type { LoadingState, AppointmentOperationResult } from '../types/api';
 
-export const useAppointments = () => {
-  const [bookings, setBookings] = useState([]);
-  const [availableSlots, setAvailableSlots] = useState([]);
-  const [loading, setLoading] = useState({
+interface UseAppointmentsReturn {
+  // State
+  bookings: Appointment[];
+  availableSlots: TimeSlot[];
+  loading: LoadingState;
+  error: string | null;
+  // Actions
+  bookAppointment: (slot: TimeSlot) => Promise<AppointmentOperationResult>;
+  updateAppointment: (appointmentId: number, newSlot: TimeSlot) => Promise<AppointmentOperationResult>;
+  cancelAppointment: (appointmentId: number) => Promise<AppointmentOperationResult>;
+  loadBookings: () => Promise<void>;
+  loadAvailableSlots: () => Promise<void>;
+  clearError: () => void;
+}
+
+export const useAppointments = (): UseAppointmentsReturn => {
+  const [bookings, setBookings] = useState<Appointment[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [loading, setLoading] = useState<LoadingState>({
     bookings: false,
     slots: false,
     action: false,
   });
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Load bookings from API
   const loadBookings = async () => {
@@ -43,13 +59,13 @@ export const useAppointments = () => {
   };
 
   // Book a new appointment
-  const bookAppointment = async (slot) => {
+  const bookAppointment = async (slot: TimeSlot): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
 
       const appointmentData = {
-        dateTime: formatDateTimeForAPI(slot.dateTime),
+        dateTime: typeof slot.dateTime === 'string' ? slot.dateTime : new Date(slot.dateTime).toISOString(),
         tutorId: slot.tutorId,
         notes: '',
       };
@@ -64,21 +80,22 @@ export const useAppointments = () => {
       return { success: true };
     } catch (error) {
       console.error('Error booking appointment:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError('Failed to book appointment. Please try again.');
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
   };
 
   // Update an existing appointment
-  const updateAppointment = async (appointmentId, newSlot) => {
+  const updateAppointment = async (appointmentId: number, newSlot: TimeSlot): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
 
       const updateData = {
-        dateTime: formatDateTimeForAPI(newSlot.dateTime),
+        dateTime: typeof newSlot.dateTime === 'string' ? newSlot.dateTime : new Date(newSlot.dateTime).toISOString(),
       };
 
       console.log('📝 Updating appointment:', { appointmentId, updateData });
@@ -91,15 +108,16 @@ export const useAppointments = () => {
       return { success: true };
     } catch (error) {
       console.error('Error updating appointment:', error);
-      setError(`Failed to update appointment: ${error.message}`);
-      return { success: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to update appointment: ${errorMessage}`);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
   };
 
   // Cancel an appointment
-  const cancelAppointment = async (appointmentId) => {
+  const cancelAppointment = async (appointmentId: number): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
@@ -114,8 +132,9 @@ export const useAppointments = () => {
       return { success: true };
     } catch (error) {
       console.error('Error cancelling appointment:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setError('Failed to cancel appointment. Please try again.');
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
