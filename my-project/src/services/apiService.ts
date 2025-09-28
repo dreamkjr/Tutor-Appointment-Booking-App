@@ -55,7 +55,7 @@ class ApiService {
   }
 
   // Get all appointments for the current user
-  async getAppointments(studentId: number = 1): Promise<Appointment[]> {
+  async getAppointments(studentId: number): Promise<Appointment[]> {
     const response = await this.request<Appointment[]>(
       `/appointments?studentId=${studentId}`
     );
@@ -118,6 +118,18 @@ class ApiService {
         error instanceof Error ? error.message : 'Unknown error';
       return { status: 'error', message: errorMessage };
     }
+  }
+
+  // Get all students from the database
+  async getStudents(): Promise<any[]> {
+    const response = await this.request<any[]>('/students');
+    return response.data || [];
+  }
+
+  // Get a specific student by ID
+  async getStudentById(studentId: number): Promise<any> {
+    const response = await this.request<any>(`/students/${studentId}`);
+    return response.data;
   }
 }
 

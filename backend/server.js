@@ -7,6 +7,7 @@ import { testConnection } from './db.js';
 
 // Import routes
 import appointmentRoutes from './routes/appointments.js';
+import studentRoutes from './routes/students.js';
 
 // Load environment variables
 dotenv.config();
@@ -93,6 +94,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/v1/appointments', appointmentRoutes);
+app.use('/api/v1/students', studentRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -115,6 +117,10 @@ app.get('/api/v1', (req, res) => {
         'POST /api/v1/appointments': 'Book a new appointment',
         'PUT /api/v1/appointments/:id': 'Update an existing appointment',
         'DELETE /api/v1/appointments/:id': 'Cancel an appointment',
+      },
+      students: {
+        'GET /api/v1/students': 'Get all students',
+        'GET /api/v1/students/:id': 'Get a specific student by ID',
       },
       health: {
         'GET /health': 'API health check',

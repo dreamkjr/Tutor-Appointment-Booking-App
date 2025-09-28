@@ -1,6 +1,7 @@
 // Custom hook for managing appointments data and operations
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import apiService from '../services/apiService';
+import { useAuth } from '../contexts/AuthContext';
 import type { Appointment, TimeSlot } from '../types/index';
 import type { LoadingState, AppointmentOperationResult } from '../types/api';
 
@@ -25,6 +26,7 @@ interface UseAppointmentsReturn {
 }
 
 export const useAppointments = (): UseAppointmentsReturn => {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Appointment[]>([]);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState<LoadingState>({
@@ -35,25 +37,44 @@ export const useAppointments = (): UseAppointmentsReturn => {
   const [error, setError] = useState<string | null>(null);
 
   // Load bookings from API
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
+    if (!user) {
+      console.log('No user logged in, skipping bookings load');
+      return;
+    }
+
     try {
       setLoading((prev) => ({ ...prev, bookings: true }));
       setError(null);
-      const data = await apiService.getAppointments();
+      const data = await apiService.getAppointments(user.id);
+      console.log(
+        '📅 Raw API response for user',
+        user.name,
+        'ID:',
+        user.id,
+        ':',
+        data
+      );
       setBookings(data);
+      console.log(
+        '📅 Bookings state updated with:',
+        data.length,
+        'appointments'
+      );
     } catch (error) {
       console.error('Error loading bookings:', error);
       setError('Failed to load your appointments. Please try again.');
     } finally {
       setLoading((prev) => ({ ...prev, bookings: false }));
     }
-  };
+  }, [user]);
 
   // Load available slots from API
-  const loadAvailableSlots = async () => {
+  const loadAvailableSlots = useCallback(async () => {
     try {
       setLoading((prev) => ({ ...prev, slots: true }));
       const data = await apiService.getAvailableSlots();
+      console.log('🕐 Loaded available slots:', data);
       setAvailableSlots(data);
     } catch (error) {
       console.error('Error loading available slots:', error);
@@ -61,12 +82,16 @@ export const useAppointments = (): UseAppointmentsReturn => {
     } finally {
       setLoading((prev) => ({ ...prev, slots: false }));
     }
-  };
+  }, []);
 
   // Book a new appointment
   const bookAppointment = async (
     slot: TimeSlot
   ): Promise<AppointmentOperationResult> => {
+    if (!user) {
+      return { success: false, message: 'User not authenticated' };
+    }
+
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
@@ -77,10 +102,17 @@ export const useAppointments = (): UseAppointmentsReturn => {
             ? slot.dateTime
             : new Date(slot.dateTime).toISOString(),
         tutorId: slot.tutorId,
+        studentId: user.id, // Include the authenticated user's ID
         notes: '',
       };
 
-      console.log('📅 Booking appointment:', appointmentData);
+      console.log(
+        '📅 Booking appointment for student:',
+        user.name,
+        'ID:',
+        user.id,
+        appointmentData
+      );
       await apiService.bookAppointment(appointmentData);
 
       // Reload data
@@ -164,11 +196,17 @@ export const useAppointments = (): UseAppointmentsReturn => {
   // Clear error state
   const clearError = () => setError(null);
 
-  // Load initial data
+  // Load initial data when user changes
   useEffect(() => {
-    loadBookings();
-    loadAvailableSlots();
-  }, []);
+    if (user) {
+      loadBookings();
+      loadAvailableSlots();
+    } else {
+      // Clear data when no user is logged in
+      setBookings([]);
+      setAvailableSlots([]);
+    }
+  }, [user, loadBookings, loadAvailableSlots]);
 
   return {
     // State

@@ -42,6 +42,7 @@ export interface TimeSlot {
 export interface AppointmentCreateData {
   dateTime: string;
   tutorId: number;
+  studentId: number;
   notes?: string;
 }
 

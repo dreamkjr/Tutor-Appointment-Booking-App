@@ -17,6 +17,9 @@ const MyBookingsTab: React.FC<MyBookingsTabProps> = ({
   onCancel,
   loading,
 }) => {
+  // Debug logging
+  console.log('📋 MyBookingsTab received:', { myBookings, loading });
+
   // Sort bookings chronologically
   const sortedBookings = [...myBookings].sort(
     (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()

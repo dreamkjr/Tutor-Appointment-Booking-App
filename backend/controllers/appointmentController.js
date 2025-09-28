@@ -230,8 +230,16 @@ export const bookAppointment = async (req, res) => {
       });
     }
 
-    const { dateTime, tutorId, studentId = 1, notes = '' } = req.body;
+    const { dateTime, tutorId, studentId, notes = '' } = req.body;
     console.log('📋 Extracted data:', { dateTime, tutorId, studentId, notes });
+
+    // Validate required fields
+    if (!studentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID is required',
+      });
+    }
 
     // Ensure we're working with a proper Date object
     let appointmentDate;

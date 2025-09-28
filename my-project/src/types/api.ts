@@ -33,5 +33,6 @@ export interface ModalState {
 
 export interface AppointmentOperationResult {
   success: boolean;
+  message?: string;
   error?: string;
 }

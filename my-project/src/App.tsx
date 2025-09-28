@@ -1,5 +1,7 @@
-// Main App component - refactored following React best practices
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import LoginPage from './components/LoginPage';
+import Header from './components/Header';
 import Modal from './components/ui/Modal';
 import TabNavigation from './components/TabNavigation';
 import BookingTab from './components/BookingTab';
@@ -15,7 +17,8 @@ import { useModal } from './hooks/useModal';
 import { GLOBAL_STYLES } from './constants';
 import type { TimeSlot, Appointment, TabType } from './types/index';
 
-export default function App(): React.JSX.Element {
+// Main authenticated app component
+const AuthenticatedApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('booking');
 
   // Custom hooks for business logic
@@ -136,53 +139,49 @@ export default function App(): React.JSX.Element {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
+    <>
       <style>{GLOBAL_STYLES}</style>
 
-      <div className="container mx-auto max-w-4xl p-4">
-        {/* Header */}
-        <header className="text-center my-6 sm:my-10">
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900">
-            Tutor Scheduling
-          </h1>
-          <p className="mt-2 text-lg text-gray-500">
-            Book and manage your tutoring sessions with ease.
-          </p>
-        </header>
+      {/* Header with user info */}
+      <Header />
 
-        {/* Error Alert */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex justify-between items-center">
-            <div className="text-red-800 font-medium">{error}</div>
-            <button
-              onClick={clearError}
-              className="text-red-600 hover:text-red-800 font-bold text-lg"
-            >
-              ×
-            </button>
+      {/* Main Content */}
+      <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen pt-4">
+        <div className="container mx-auto max-w-4xl p-4">
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex justify-between items-center">
+              <div className="text-red-800 font-medium">{error}</div>
+              <button
+                onClick={clearError}
+                className="text-red-600 hover:text-red-800 font-bold text-lg"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Tab Navigation */}
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+          {/* Tab Content */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            {activeTab === 'booking' && (
+              <BookingTab
+                availableSlots={availableSlots}
+                onBook={handleBookAppointment}
+                loading={loading.slots}
+              />
+            )}
+            {activeTab === 'mybookings' && (
+              <MyBookingsTab
+                myBookings={bookings}
+                onEdit={handleEditAppointment}
+                onCancel={handleCancelAppointment}
+                loading={loading.bookings}
+              />
+            )}
           </div>
-        )}
-
-        {/* Tab Navigation */}
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {/* Tab Content */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {activeTab === 'booking' && (
-            <BookingTab
-              availableSlots={availableSlots}
-              onBook={handleBookAppointment}
-              loading={loading.slots}
-            />
-          )}
-          {activeTab === 'mybookings' && (
-            <MyBookingsTab
-              myBookings={bookings}
-              onEdit={handleEditAppointment}
-              onCancel={handleCancelAppointment}
-              loading={loading.bookings}
-            />
-          )}
         </div>
       </div>
 
@@ -190,6 +189,42 @@ export default function App(): React.JSX.Element {
       <Modal isOpen={modalState.isOpen} onClose={closeModal}>
         {renderModalContent()}
       </Modal>
-    </div>
+    </>
   );
-}
+};
+
+// Main App wrapper with authentication
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
+
+// App content that checks authentication state
+const AppContent: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  // Show main app if authenticated
+  return <AuthenticatedApp />;
+};
+
+export default App;
