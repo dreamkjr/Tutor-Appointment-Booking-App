@@ -348,6 +348,7 @@ export default function App() {
     type: '',
     data: null,
   });
+  const [selectedNewSlot, setSelectedNewSlot] = useState(null);
 
   // Load data on component mount
   useEffect(() => {
@@ -383,8 +384,10 @@ export default function App() {
   };
 
   const openModal = (type, data) => setModalState({ isOpen: true, type, data });
-  const closeModal = () =>
+  const closeModal = () => {
     setModalState({ isOpen: false, type: '', data: null });
+    setSelectedNewSlot(null); // Reset selected slot when closing modal
+  };
 
   const handleBookAppointment = (slot) => {
     openModal('confirmBooking', slot);
@@ -425,16 +428,31 @@ export default function App() {
   };
 
   const handleEditAppointment = (booking) => {
+    setSelectedNewSlot(null); // Reset selected new slot
     openModal('editBooking', booking);
   };
 
-  const confirmEdit = async (newSlot) => {
+  // When user selects a new slot during editing, show confirmation dialog
+  const handleSlotSelectionForEdit = (newSlot) => {
+    setSelectedNewSlot(newSlot);
+    openModal('confirmReschedule', {
+      originalBooking: modalState.data,
+      newSlot: newSlot,
+    });
+  };
+
+  const confirmEdit = async () => {
+    if (!selectedNewSlot) {
+      setError('No new time slot selected');
+      return;
+    }
+
     try {
       setLoading((prev) => ({ ...prev, action: true }));
-      console.log('📝 Confirming edit with new slot:', newSlot);
+      console.log('📝 Confirming edit with new slot:', selectedNewSlot);
 
       // Ensure dateTime is properly formatted as ISO string
-      let dateTimeValue = newSlot.dateTime;
+      let dateTimeValue = selectedNewSlot.dateTime;
       if (dateTimeValue instanceof Date) {
         dateTimeValue = dateTimeValue.toISOString();
       } else if (typeof dateTimeValue === 'string') {
@@ -451,17 +469,21 @@ export default function App() {
       };
 
       console.log('📤 Sending update request:', {
-        appointmentId: modalState.data.id,
+        appointmentId: modalState.data.originalBooking.id,
         updateData,
       });
 
-      await apiService.updateAppointment(modalState.data.id, updateData);
+      await apiService.updateAppointment(
+        modalState.data.originalBooking.id,
+        updateData
+      );
 
       // Reload data
       await loadBookings();
       await loadAvailableSlots();
 
       closeModal();
+      setSelectedNewSlot(null);
       setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -544,10 +566,19 @@ export default function App() {
             <p className="text-gray-600 mb-4">
               Select a new time slot for your appointment.
             </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm">
+              <div className="font-semibold text-blue-800">
+                Current Appointment:
+              </div>
+              <div className="text-blue-700">
+                {formatDateHeader(new Date(data.dateTime))} at{' '}
+                {formatTime(new Date(data.dateTime))}
+              </div>
+            </div>
             <div className="max-h-64 overflow-y-auto pr-2">
               <TimeSlotPicker
                 availableSlots={availableSlots}
-                onSelectSlot={confirmEdit}
+                onSelectSlot={handleSlotSelectionForEdit}
                 loading={loading.slots}
               />
             </div>
@@ -595,6 +626,67 @@ export default function App() {
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 )}
                 Yes, Cancel
+              </button>
+            </div>
+          </div>
+        );
+      case 'confirmReschedule':
+        return (
+          <div>
+            <div className="flex items-start">
+              <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                <ClockIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4 text-left">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Confirm Reschedule
+                </h3>
+                <p className="text-gray-600 mt-1">
+                  Are you sure you want to reschedule your appointment to this
+                  new time?
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                    <div className="font-semibold text-red-800">From:</div>
+                    <div className="text-red-700">
+                      {formatDateHeader(
+                        new Date(data.originalBooking.dateTime)
+                      )}{' '}
+                      at {formatTime(new Date(data.originalBooking.dateTime))}
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+                    <div className="font-semibold text-green-800">To:</div>
+                    <div className="text-green-700">
+                      {formatDateHeader(new Date(data.newSlot.dateTime))} at{' '}
+                      {formatTime(new Date(data.newSlot.dateTime))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-5">
+              <button
+                onClick={() => {
+                  setSelectedNewSlot(null);
+                  openModal('editBooking', data.originalBooking);
+                }}
+                disabled={loading.action}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 disabled:opacity-50"
+              >
+                Back
+              </button>
+              <button
+                onClick={confirmEdit}
+                disabled={loading.action}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center"
+              >
+                {loading.action && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                )}
+                Confirm Reschedule
               </button>
             </div>
           </div>
