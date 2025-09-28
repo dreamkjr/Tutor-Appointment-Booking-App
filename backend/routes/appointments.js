@@ -6,6 +6,7 @@ import {
   bookAppointment,
   updateAppointment,
   cancelAppointment,
+  cleanupAppointments,
 } from '../controllers/appointmentController.js';
 
 const router = express.Router();
@@ -61,5 +62,6 @@ router.get('/available-slots', availableSlotsValidation, getAvailableSlots);
 router.post('/', bookAppointmentValidation, bookAppointment);
 router.put('/:id', updateAppointmentValidation, updateAppointment);
 router.delete('/:id', appointmentIdValidation, cancelAppointment);
+router.post('/cleanup', cleanupAppointments); // Temporary cleanup route
 
 export default router;

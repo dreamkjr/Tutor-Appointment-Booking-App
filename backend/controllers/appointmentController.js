@@ -28,21 +28,46 @@ export const getAppointments = async (req, res) => {
       ORDER BY a.appointment_date ASC, a.start_time ASC
     `;
 
+    console.log(
+      '📊 Raw appointments from DB:',
+      JSON.stringify(appointments, null, 2)
+    );
+
     // Transform the data to match frontend expectations
-    const transformedAppointments = appointments.map((appointment) => ({
-      id: appointment.id,
-      dateTime: new Date(
-        `${appointment.appointmentDate}T${appointment.startTime}`
-      ),
-      status: appointment.status,
-      notes: appointment.notes,
-      tutor: {
-        name: appointment.tutorName,
-        email: appointment.tutorEmail,
-        subject: appointment.subject,
-      },
-      createdAt: appointment.createdAt,
-    }));
+    const transformedAppointments = appointments.map((appointment) => {
+      // Handle both snake_case and camelCase field names from database
+      const appointmentDate =
+        appointment.appointment_date || appointment.appointmentDate;
+      const startTime = appointment.start_time || appointment.startTime;
+      const tutorName = appointment.tutor_name || appointment.tutorName;
+      const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
+      const createdAt = appointment.created_at || appointment.createdAt;
+
+      console.log('🔄 Processing appointment:', {
+        id: appointment.id,
+        appointmentDate: appointmentDate,
+        startTime: startTime,
+        tutorName: tutorName,
+      });
+
+      return {
+        id: appointment.id,
+        dateTime:
+          appointmentDate && startTime
+            ? new Date(
+                `${appointmentDate.toISOString().split('T')[0]}T${startTime}Z`
+              )
+            : null,
+        status: appointment.status,
+        notes: appointment.notes,
+        tutor: {
+          name: tutorName,
+          email: tutorEmail,
+          subject: appointment.subject,
+        },
+        createdAt: createdAt,
+      };
+    });
 
     res.json({
       success: true,
@@ -135,7 +160,8 @@ export const getAvailableSlots = async (req, res) => {
         const slotKey = `${dateStr}_${timeStr}`;
 
         if (!bookedSlots.has(slotKey)) {
-          const slotDateTime = new Date(`${dateStr}T${timeStr}`);
+          // Create UTC date to avoid timezone issues
+          const slotDateTime = new Date(`${dateStr}T${timeStr}Z`);
           availableSlots.push({
             id: slotKey,
             dateTime: slotDateTime,
@@ -166,8 +192,11 @@ export const getAvailableSlots = async (req, res) => {
 // Book a new appointment
 export const bookAppointment = async (req, res) => {
   try {
+    console.log('📝 Booking request received:', req.body);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -176,16 +205,62 @@ export const bookAppointment = async (req, res) => {
     }
 
     const { dateTime, tutorId, studentId = 1, notes = '' } = req.body;
+    console.log('📋 Extracted data:', { dateTime, tutorId, studentId, notes });
 
-    const appointmentDate = new Date(dateTime);
-    const dateStr = appointmentDate.toISOString().split('T')[0];
-    const startTime = appointmentDate.toTimeString().split(' ')[0];
+    // Ensure we're working with a proper Date object
+    let appointmentDate;
+    if (typeof dateTime === 'string') {
+      appointmentDate = new Date(dateTime);
+    } else if (dateTime instanceof Date) {
+      appointmentDate = dateTime;
+    } else {
+      throw new Error('Invalid dateTime format');
+    }
+
+    // Validate the date
+    if (isNaN(appointmentDate.getTime())) {
+      throw new Error('Invalid date provided');
+    }
+
+    // Use UTC to avoid timezone issues
+    const year = appointmentDate.getUTCFullYear();
+    const month = String(appointmentDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(appointmentDate.getUTCDate()).padStart(2, '0');
+    const hours = String(appointmentDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(appointmentDate.getUTCMinutes()).padStart(2, '0');
+
+    const dateStr = `${year}-${month}-${day}`;
+    const startTime = `${hours}:${minutes}:00`;
 
     // Calculate end time (1 hour session)
-    const endDateTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000);
-    const endTime = endDateTime.toTimeString().split(' ')[0];
+    const endHour = (appointmentDate.getUTCHours() + 1) % 24;
+    const endTime = `${String(endHour).padStart(2, '0')}:${minutes}:00`;
 
-    // Check if the slot is still available
+    console.log('🕐 Time calculations:', {
+      originalDateTime: dateTime,
+      parsedDate: appointmentDate,
+      dateStr,
+      startTime,
+      endTime,
+      utcInfo: {
+        year: appointmentDate.getUTCFullYear(),
+        month: appointmentDate.getUTCMonth() + 1,
+        date: appointmentDate.getUTCDate(),
+        hours: appointmentDate.getUTCHours(),
+        minutes: appointmentDate.getUTCMinutes(),
+      },
+    });
+
+    // First, clean up any cancelled appointments for this slot to avoid constraint violations
+    await sql`
+      DELETE FROM appointments
+      WHERE tutor_id = ${tutorId}
+        AND appointment_date = ${dateStr}
+        AND start_time = ${startTime}
+        AND status = 'cancelled'
+    `;
+
+    // Check if the slot is still available (only scheduled appointments matter)
     const existingAppointment = await sql`
       SELECT id FROM appointments
       WHERE tutor_id = ${tutorId}
@@ -229,26 +304,40 @@ export const bookAppointment = async (req, res) => {
 
     const appointment = appointmentWithTutor[0];
 
+    // Handle both snake_case and camelCase field names from database
+    const appointmentDateField =
+      appointment.appointment_date || appointment.appointmentDate;
+    const startTimeField = appointment.start_time || appointment.startTime;
+    const tutorName = appointment.tutor_name || appointment.tutorName;
+    const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
+    const createdAt = appointment.created_at || appointment.createdAt;
+
     res.status(201).json({
       success: true,
       message: 'Appointment booked successfully',
       data: {
         id: appointment.id,
-        dateTime: new Date(
-          `${appointment.appointmentDate}T${appointment.startTime}`
-        ),
+        dateTime:
+          appointmentDateField && startTimeField
+            ? new Date(
+                `${
+                  appointmentDateField.toISOString().split('T')[0]
+                }T${startTimeField}Z`
+              )
+            : null,
         status: appointment.status,
         notes: appointment.notes,
         tutor: {
-          name: appointment.tutorName,
-          email: appointment.tutorEmail,
+          name: tutorName,
+          email: tutorEmail,
           subject: appointment.subject,
         },
-        createdAt: appointment.createdAt,
+        createdAt: createdAt,
       },
     });
   } catch (error) {
-    console.error('Error booking appointment:', error);
+    console.error('❌ Error booking appointment:', error);
+    console.error('❌ Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to book appointment',
@@ -416,6 +505,36 @@ export const cancelAppointment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to cancel appointment',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+// Temporary cleanup function to remove corrupted appointments
+export const cleanupAppointments = async (req, res) => {
+  try {
+    console.log('🧹 Starting cleanup of corrupted appointments...');
+
+    // Delete appointments with null appointment_date or start_time
+    const deletedAppointments = await sql`
+      DELETE FROM appointments 
+      WHERE appointment_date IS NULL 
+        OR start_time IS NULL
+      RETURNING id, appointment_date, start_time
+    `;
+
+    console.log('🗑️ Deleted appointments:', deletedAppointments);
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${deletedAppointments.length} corrupted appointments`,
+      deletedAppointments,
+    });
+  } catch (error) {
+    console.error('❌ Error cleaning up appointments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to cleanup appointments',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }

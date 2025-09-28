@@ -380,11 +380,18 @@ export default function App() {
       setLoading((prev) => ({ ...prev, action: true }));
       const slot = modalState.data;
 
+      console.log('🎯 Frontend booking slot:', slot);
+
       const appointmentData = {
-        dateTime: slot.dateTime,
+        dateTime:
+          slot.dateTime instanceof Date
+            ? slot.dateTime.toISOString()
+            : slot.dateTime,
         tutorId: slot.tutorId || 1, // Default to first tutor
         notes: '',
       };
+
+      console.log('📤 Sending appointment data:', appointmentData);
 
       await apiService.bookAppointment(appointmentData);
 

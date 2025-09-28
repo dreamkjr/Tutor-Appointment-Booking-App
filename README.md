@@ -47,6 +47,7 @@ A full-stack application for booking tutoring appointments with a React frontend
    ```env
    DATABASE_URL=postgresql://postgres.watcahjucutswvyfytjs:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
    ```
+
    - Replace `[YOUR-PASSWORD]` with your actual Supabase database password
 
 4. **Set up the database:**
