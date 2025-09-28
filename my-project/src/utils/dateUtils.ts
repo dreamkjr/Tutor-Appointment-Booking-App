@@ -29,7 +29,7 @@ export const formatTime = (date: Date | string): string => {
  */
 export const formatDateTimeForAPI = (dateTime: Date | string): string => {
   let dateTimeValue: string;
-  
+
   if (dateTime instanceof Date) {
     dateTimeValue = dateTime.toISOString();
   } else if (typeof dateTime === 'string') {
@@ -42,7 +42,7 @@ export const formatDateTimeForAPI = (dateTime: Date | string): string => {
   } else {
     throw new Error('DateTime must be a Date object or valid date string');
   }
-  
+
   return dateTimeValue;
 };
 

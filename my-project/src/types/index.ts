@@ -52,11 +52,11 @@ export interface AppointmentUpdateData {
 
 export type AppointmentStatus = 'scheduled' | 'cancelled' | 'completed';
 
-export type ModalType = 
-  | 'confirmBooking' 
-  | 'editBooking' 
-  | 'confirmReschedule' 
-  | 'confirmCancel' 
+export type ModalType =
+  | 'confirmBooking'
+  | 'editBooking'
+  | 'confirmReschedule'
+  | 'confirmCancel'
   | '';
 
 export type TabType = 'booking' | 'mybookings';

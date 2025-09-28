@@ -4,11 +4,11 @@ import Modal from './components/ui/Modal';
 import TabNavigation from './components/TabNavigation';
 import BookingTab from './components/BookingTab';
 import MyBookingsTab from './components/MyBookingsTab';
-import { 
+import {
   BookingConfirmationModal,
   EditBookingModal,
   RescheduleConfirmationModal,
-  CancelConfirmationModal
+  CancelConfirmationModal,
 } from './components/ModalContent';
 import { useAppointments } from './hooks/useAppointments';
 import { useModal } from './hooks/useModal';
@@ -64,12 +64,12 @@ export default function App(): React.JSX.Element {
     if (!selectedNewSlot || !modalState.data?.originalBooking) {
       return;
     }
-    
+
     const result = await updateAppointment(
-      modalState.data.originalBooking.id, 
+      modalState.data.originalBooking.id,
       selectedNewSlot
     );
-    
+
     if (result.success) {
       closeModal();
     }
@@ -96,17 +96,19 @@ export default function App(): React.JSX.Element {
             loading={loading.action}
           />
         );
-        
+
       case 'editBooking':
         return (
           <EditBookingModal
             booking={data}
             availableSlots={availableSlots}
-            onSelectSlot={(newSlot: TimeSlot) => handleSlotSelectionForEdit(newSlot, data)}
+            onSelectSlot={(newSlot: TimeSlot) =>
+              handleSlotSelectionForEdit(newSlot, data)
+            }
             loading={loading.slots}
           />
         );
-        
+
       case 'confirmReschedule':
         return (
           <RescheduleConfirmationModal
@@ -117,7 +119,7 @@ export default function App(): React.JSX.Element {
             loading={loading.action}
           />
         );
-        
+
       case 'confirmCancel':
         return (
           <CancelConfirmationModal
@@ -127,7 +129,7 @@ export default function App(): React.JSX.Element {
             loading={loading.action}
           />
         );
-        
+
       default:
         return null;
     }
@@ -162,10 +164,7 @@ export default function App(): React.JSX.Element {
         )}
 
         {/* Tab Navigation */}
-        <TabNavigation 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab} 
-        />
+        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Tab Content */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">

@@ -12,12 +12,9 @@ interface BookingConfirmationModalProps {
   loading: boolean;
 }
 
-export const BookingConfirmationModal: React.FC<BookingConfirmationModalProps> = ({
-  slot,
-  onConfirm,
-  onCancel,
-  loading,
-}) => (
+export const BookingConfirmationModal: React.FC<
+  BookingConfirmationModalProps
+> = ({ slot, onConfirm, onCancel, loading }) => (
   <div>
     <div className="flex items-start">
       <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -108,13 +105,9 @@ interface RescheduleConfirmationModalProps {
   loading: boolean;
 }
 
-export const RescheduleConfirmationModal: React.FC<RescheduleConfirmationModalProps> = ({
-  originalBooking,
-  newSlot,
-  onConfirm,
-  onBack,
-  loading,
-}) => (
+export const RescheduleConfirmationModal: React.FC<
+  RescheduleConfirmationModalProps
+> = ({ originalBooking, newSlot, onConfirm, onBack, loading }) => (
   <div>
     <div className="flex items-start">
       <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
@@ -174,12 +167,9 @@ interface CancelConfirmationModalProps {
   loading: boolean;
 }
 
-export const CancelConfirmationModal: React.FC<CancelConfirmationModalProps> = ({
-  booking,
-  onConfirm,
-  onCancel,
-  loading,
-}) => (
+export const CancelConfirmationModal: React.FC<
+  CancelConfirmationModalProps
+> = ({ booking, onConfirm, onCancel, loading }) => (
   <div>
     <div className="flex items-start">
       <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">

@@ -15,7 +15,11 @@ interface DayGroup {
   slots: TimeSlot[];
 }
 
-const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ availableSlots, onSelectSlot, loading = false }) => {
+const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
+  availableSlots,
+  onSelectSlot,
+  loading = false,
+}) => {
   const slotsByDay = useMemo(() => {
     const grouped: Record<string, DayGroup> = {};
 
@@ -34,7 +38,9 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ availableSlots, onSelec
     });
 
     // Convert to array and sort by date
-    return Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
+    return Object.values(grouped).sort(
+      (a, b) => a.date.getTime() - b.date.getTime()
+    );
   }, [availableSlots]);
 
   if (loading) {

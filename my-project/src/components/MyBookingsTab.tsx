@@ -11,7 +11,12 @@ interface MyBookingsTabProps {
   loading: boolean;
 }
 
-const MyBookingsTab: React.FC<MyBookingsTabProps> = ({ myBookings, onEdit, onCancel, loading }) => {
+const MyBookingsTab: React.FC<MyBookingsTabProps> = ({
+  myBookings,
+  onEdit,
+  onCancel,
+  loading,
+}) => {
   // Sort bookings chronologically
   const sortedBookings = [...myBookings].sort(
     (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()

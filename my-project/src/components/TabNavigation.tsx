@@ -7,7 +7,10 @@ interface TabNavigationProps {
   onTabChange: (tabId: TabType) => void;
 }
 
-const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
+const TabNavigation: React.FC<TabNavigationProps> = ({
+  activeTab,
+  onTabChange,
+}) => {
   const tabs: Array<{ id: TabType; label: string }> = [
     { id: 'booking', label: 'Booking' },
     { id: 'mybookings', label: 'My Bookings' },

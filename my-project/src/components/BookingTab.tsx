@@ -9,7 +9,11 @@ interface BookingTabProps {
   loading: boolean;
 }
 
-const BookingTab: React.FC<BookingTabProps> = ({ availableSlots, onBook, loading }) => {
+const BookingTab: React.FC<BookingTabProps> = ({
+  availableSlots,
+  onBook,
+  loading,
+}) => {
   return (
     <div className="p-4 sm:p-6 animate-fade-in">
       <h2 className="text-2xl font-bold text-gray-800 mb-1">

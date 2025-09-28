@@ -1,13 +1,10 @@
 // API service for communicating with the backend with TypeScript type safety
-import { 
-  ApiResponse, 
-  ApiError
-} from '../types/api';
-import { 
-  Appointment, 
+import { ApiResponse, ApiError } from '../types/api';
+import {
+  Appointment,
   TimeSlot,
   AppointmentCreateData,
-  AppointmentUpdateData
+  AppointmentUpdateData,
 } from '../types/index';
 
 const API_BASE_URL: string =
@@ -26,7 +23,7 @@ class ApiService {
 
   // Generic request method with error handling and type safety
   private async request<T = any>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
@@ -59,7 +56,9 @@ class ApiService {
 
   // Get all appointments for the current user
   async getAppointments(studentId: number = 1): Promise<Appointment[]> {
-    const response = await this.request<Appointment[]>(`/appointments?studentId=${studentId}`);
+    const response = await this.request<Appointment[]>(
+      `/appointments?studentId=${studentId}`
+    );
     return response.data || [];
   }
 
@@ -73,7 +72,9 @@ class ApiService {
   }
 
   // Book a new appointment
-  async bookAppointment(appointmentData: AppointmentCreateData): Promise<Appointment> {
+  async bookAppointment(
+    appointmentData: AppointmentCreateData
+  ): Promise<Appointment> {
     const response = await this.request<Appointment>('/appointments', {
       method: 'POST',
       body: JSON.stringify(appointmentData),
@@ -83,13 +84,16 @@ class ApiService {
 
   // Update an existing appointment
   async updateAppointment(
-    appointmentId: number, 
+    appointmentId: number,
     updateData: AppointmentUpdateData
   ): Promise<Appointment> {
-    const response = await this.request<Appointment>(`/appointments/${appointmentId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updateData),
-    });
+    const response = await this.request<Appointment>(
+      `/appointments/${appointmentId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      }
+    );
     return response.data!;
   }
 
@@ -110,7 +114,8 @@ class ApiService {
       return await response.json();
     } catch (error) {
       console.error('Health check failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return { status: 'error', message: errorMessage };
     }
   }

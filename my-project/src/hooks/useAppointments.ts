@@ -12,8 +12,13 @@ interface UseAppointmentsReturn {
   error: string | null;
   // Actions
   bookAppointment: (slot: TimeSlot) => Promise<AppointmentOperationResult>;
-  updateAppointment: (appointmentId: number, newSlot: TimeSlot) => Promise<AppointmentOperationResult>;
-  cancelAppointment: (appointmentId: number) => Promise<AppointmentOperationResult>;
+  updateAppointment: (
+    appointmentId: number,
+    newSlot: TimeSlot
+  ) => Promise<AppointmentOperationResult>;
+  cancelAppointment: (
+    appointmentId: number
+  ) => Promise<AppointmentOperationResult>;
   loadBookings: () => Promise<void>;
   loadAvailableSlots: () => Promise<void>;
   clearError: () => void;
@@ -59,13 +64,18 @@ export const useAppointments = (): UseAppointmentsReturn => {
   };
 
   // Book a new appointment
-  const bookAppointment = async (slot: TimeSlot): Promise<AppointmentOperationResult> => {
+  const bookAppointment = async (
+    slot: TimeSlot
+  ): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
 
       const appointmentData = {
-        dateTime: typeof slot.dateTime === 'string' ? slot.dateTime : new Date(slot.dateTime).toISOString(),
+        dateTime:
+          typeof slot.dateTime === 'string'
+            ? slot.dateTime
+            : new Date(slot.dateTime).toISOString(),
         tutorId: slot.tutorId,
         notes: '',
       };
@@ -80,7 +90,8 @@ export const useAppointments = (): UseAppointmentsReturn => {
       return { success: true };
     } catch (error) {
       console.error('Error booking appointment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       setError('Failed to book appointment. Please try again.');
       return { success: false, error: errorMessage };
     } finally {
@@ -89,13 +100,19 @@ export const useAppointments = (): UseAppointmentsReturn => {
   };
 
   // Update an existing appointment
-  const updateAppointment = async (appointmentId: number, newSlot: TimeSlot): Promise<AppointmentOperationResult> => {
+  const updateAppointment = async (
+    appointmentId: number,
+    newSlot: TimeSlot
+  ): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
 
       const updateData = {
-        dateTime: typeof newSlot.dateTime === 'string' ? newSlot.dateTime : new Date(newSlot.dateTime).toISOString(),
+        dateTime:
+          typeof newSlot.dateTime === 'string'
+            ? newSlot.dateTime
+            : new Date(newSlot.dateTime).toISOString(),
       };
 
       console.log('📝 Updating appointment:', { appointmentId, updateData });
@@ -108,7 +125,8 @@ export const useAppointments = (): UseAppointmentsReturn => {
       return { success: true };
     } catch (error) {
       console.error('Error updating appointment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       setError(`Failed to update appointment: ${errorMessage}`);
       return { success: false, error: errorMessage };
     } finally {
@@ -117,7 +135,9 @@ export const useAppointments = (): UseAppointmentsReturn => {
   };
 
   // Cancel an appointment
-  const cancelAppointment = async (appointmentId: number): Promise<AppointmentOperationResult> => {
+  const cancelAppointment = async (
+    appointmentId: number
+  ): Promise<AppointmentOperationResult> => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
       setError(null);
@@ -132,7 +152,8 @@ export const useAppointments = (): UseAppointmentsReturn => {
       return { success: true };
     } catch (error) {
       console.error('Error cancelling appointment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       setError('Failed to cancel appointment. Please try again.');
       return { success: false, error: errorMessage };
     } finally {

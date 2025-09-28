@@ -15,7 +15,10 @@ interface UseModalReturn {
   // Actions
   openModal: (type: ModalType, data?: any) => void;
   closeModal: () => void;
-  handleSlotSelectionForEdit: (newSlot: TimeSlot, originalBooking: Appointment) => void;
+  handleSlotSelectionForEdit: (
+    newSlot: TimeSlot,
+    originalBooking: Appointment
+  ) => void;
   returnToEditBooking: (originalBooking: Appointment) => void;
   setSelectedNewSlot: (slot: TimeSlot | null) => void;
 }
@@ -40,7 +43,10 @@ export const useModal = (): UseModalReturn => {
   };
 
   // Handle slot selection for editing (before confirmation)
-  const handleSlotSelectionForEdit = (newSlot: TimeSlot, originalBooking: Appointment): void => {
+  const handleSlotSelectionForEdit = (
+    newSlot: TimeSlot,
+    originalBooking: Appointment
+  ): void => {
     setSelectedNewSlot(newSlot);
     openModal('confirmReschedule', {
       originalBooking,
