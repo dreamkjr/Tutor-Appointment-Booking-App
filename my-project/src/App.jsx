@@ -201,10 +201,25 @@ const TimeSlotPicker = ({ availableSlots, onSelectSlot, loading = false }) => {
             {slots.map((slot) => (
               <button
                 key={slot.id}
-                onClick={() => onSelectSlot(slot)}
-                className="bg-blue-50 text-blue-700 font-medium py-2 px-3 rounded-lg hover:bg-blue-100 hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
+                onClick={() => (slot.isBooked ? null : onSelectSlot(slot))}
+                disabled={slot.isBooked}
+                className={`font-medium py-2 px-3 rounded-lg transition-all duration-200 ${
+                  slot.isBooked
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-60'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:shadow-md transform hover:-translate-y-0.5'
+                }`}
+                title={
+                  slot.isBooked
+                    ? 'This time slot is already booked'
+                    : 'Click to book this slot'
+                }
               >
                 {formatTime(new Date(slot.dateTime))}
+                {slot.isBooked && (
+                  <span className="block text-xs mt-1 text-gray-400">
+                    Booked
+                  </span>
+                )}
               </button>
             ))}
           </div>

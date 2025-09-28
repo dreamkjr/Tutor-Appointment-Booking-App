@@ -119,7 +119,7 @@ export const getAvailableSlots = async (req, res) => {
 
     // Get existing appointments for this tutor
     const existingAppointments = await sql`
-      SELECT appointment_date, start_time
+      SELECT id, appointment_date, start_time
       FROM appointments
       WHERE tutor_id = ${tutor.id}
         AND status = 'scheduled'
@@ -130,9 +130,27 @@ export const getAvailableSlots = async (req, res) => {
     // Create a set of booked time slots
     const bookedSlots = new Set();
     existingAppointments.forEach((apt) => {
-      const slotKey = `${apt.appointmentDate}_${apt.startTime}`;
-      bookedSlots.add(slotKey);
+      // Handle both snake_case and camelCase field names
+      const appointmentDate = apt.appointment_date || apt.appointmentDate;
+      const startTime = apt.start_time || apt.startTime;
+
+      if (appointmentDate && startTime) {
+        // Format date consistently
+        const dateStr =
+          appointmentDate instanceof Date
+            ? appointmentDate.toISOString().split('T')[0]
+            : appointmentDate;
+        const slotKey = `${dateStr}_${startTime}`;
+        bookedSlots.add(slotKey);
+
+        console.log(
+          `🚫 Blocking booked slot: ${slotKey} (ID: ${apt.id || 'unknown'})`
+        );
+      }
     });
+
+    console.log(`📋 Total booked slots found: ${bookedSlots.size}`);
+    console.log(`🔒 Booked slots:`, Array.from(bookedSlots));
 
     // Generate available slots
     const availableSlots = [];
@@ -158,17 +176,25 @@ export const getAvailableSlots = async (req, res) => {
       for (let hour = 9; hour <= 17; hour++) {
         const timeStr = `${hour.toString().padStart(2, '0')}:00:00`;
         const slotKey = `${dateStr}_${timeStr}`;
+        const isBooked = bookedSlots.has(slotKey);
 
-        if (!bookedSlots.has(slotKey)) {
-          // Create UTC date to avoid timezone issues
-          const slotDateTime = new Date(`${dateStr}T${timeStr}Z`);
-          availableSlots.push({
-            id: slotKey,
-            dateTime: slotDateTime,
-            tutorId: tutor.id,
-            tutorName: tutor.tutorName,
-            subject: tutor.subject,
-          });
+        // Create UTC date to avoid timezone issues
+        const slotDateTime = new Date(`${dateStr}T${timeStr}Z`);
+
+        // Always add the slot, but mark if it's booked
+        availableSlots.push({
+          id: slotKey,
+          dateTime: slotDateTime,
+          tutorId: tutor.id,
+          tutorName: tutor.tutorName,
+          subject: tutor.subject,
+          isBooked: isBooked,
+        });
+
+        if (isBooked) {
+          console.log(`❌ Booked slot (disabled): ${slotKey}`);
+        } else {
+          console.log(`✅ Available slot: ${slotKey}`);
         }
       }
 
