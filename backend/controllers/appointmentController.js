@@ -375,8 +375,14 @@ export const bookAppointment = async (req, res) => {
 // Update an existing appointment
 export const updateAppointment = async (req, res) => {
   try {
+    console.log('🔄 Update appointment request:', {
+      id: req.params.id,
+      body: req.body,
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -394,6 +400,7 @@ export const updateAppointment = async (req, res) => {
     `;
 
     if (existingAppointment.length === 0) {
+      console.log('❌ Appointment not found:', id);
       return res.status(404).json({
         success: false,
         message: 'Appointment not found or cannot be updated',
@@ -401,22 +408,68 @@ export const updateAppointment = async (req, res) => {
     }
 
     const appointment = existingAppointment[0];
+    console.log('📋 Existing appointment:', appointment);
+
+    // Handle both snake_case and camelCase field names for tutor_id
+    const tutorId = appointment.tutor_id || appointment.tutorId;
+
     let updateFields = {};
 
     // If updating the date/time
     if (dateTime) {
-      const newDateTime = new Date(dateTime);
-      const dateStr = newDateTime.toISOString().split('T')[0];
-      const startTime = newDateTime.toTimeString().split(' ')[0];
+      console.log('📅 Updating appointment time to:', dateTime);
+
+      // Ensure we're working with a proper Date object and use UTC consistently
+      let appointmentDate;
+      if (typeof dateTime === 'string') {
+        appointmentDate = new Date(dateTime);
+      } else if (dateTime instanceof Date) {
+        appointmentDate = dateTime;
+      } else {
+        throw new Error('Invalid dateTime format');
+      }
+
+      // Validate the date
+      if (isNaN(appointmentDate.getTime())) {
+        throw new Error('Invalid date provided');
+      }
+
+      // Use UTC to avoid timezone issues (same as booking function)
+      const year = appointmentDate.getUTCFullYear();
+      const month = String(appointmentDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(appointmentDate.getUTCDate()).padStart(2, '0');
+      const hours = String(appointmentDate.getUTCHours()).padStart(2, '0');
+      const minutes = String(appointmentDate.getUTCMinutes()).padStart(2, '0');
+
+      const dateStr = `${year}-${month}-${day}`;
+      const startTime = `${hours}:${minutes}:00`;
 
       // Calculate end time (1 hour session)
-      const endDateTime = new Date(newDateTime.getTime() + 60 * 60 * 1000);
-      const endTime = endDateTime.toTimeString().split(' ')[0];
+      const endHour = (appointmentDate.getUTCHours() + 1) % 24;
+      const endTime = `${String(endHour).padStart(2, '0')}:${minutes}:00`;
 
-      // Check if the new slot is available
+      console.log('🕐 Update time calculations:', {
+        originalDateTime: dateTime,
+        parsedDate: appointmentDate,
+        dateStr,
+        startTime,
+        endTime,
+        tutorId: tutorId,
+      });
+
+      // First, clean up any cancelled appointments for this new slot to avoid constraint violations
+      await sql`
+        DELETE FROM appointments
+        WHERE tutor_id = ${tutorId}
+          AND appointment_date = ${dateStr}
+          AND start_time = ${startTime}
+          AND status = 'cancelled'
+      `;
+
+      // Check if the new slot is available (exclude the current appointment being updated)
       const conflictingAppointment = await sql`
         SELECT id FROM appointments
-        WHERE tutor_id = ${appointment.tutorId}
+        WHERE tutor_id = ${tutorId}
           AND appointment_date = ${dateStr}
           AND start_time = ${startTime}
           AND status = 'scheduled'
@@ -424,6 +477,7 @@ export const updateAppointment = async (req, res) => {
       `;
 
       if (conflictingAppointment.length > 0) {
+        console.log('❌ Slot conflict detected:', conflictingAppointment[0]);
         return res.status(409).json({
           success: false,
           message: 'The new time slot is not available',
@@ -440,6 +494,8 @@ export const updateAppointment = async (req, res) => {
       updateFields.notes = notes;
     }
 
+    console.log('📝 Update fields:', updateFields);
+
     // Update the appointment
     const updated = await sql`
       UPDATE appointments 
@@ -447,6 +503,8 @@ export const updateAppointment = async (req, res) => {
       WHERE id = ${id}
       RETURNING *
     `;
+
+    console.log('✅ Appointment updated in database:', updated[0]);
 
     // Fetch the complete updated appointment data
     const appointmentWithTutor = await sql`
@@ -468,24 +526,48 @@ export const updateAppointment = async (req, res) => {
     `;
 
     const updatedAppointment = appointmentWithTutor[0];
+    console.log('📋 Complete updated appointment data:', updatedAppointment);
+
+    // Handle both snake_case and camelCase field names from database
+    const appointmentDateField =
+      updatedAppointment.appointment_date || updatedAppointment.appointmentDate;
+    const startTimeField =
+      updatedAppointment.start_time || updatedAppointment.startTime;
+    const tutorName =
+      updatedAppointment.tutor_name || updatedAppointment.tutorName;
+    const tutorEmail =
+      updatedAppointment.tutor_email || updatedAppointment.tutorEmail;
+    const createdAt =
+      updatedAppointment.created_at || updatedAppointment.createdAt;
+
+    const responseData = {
+      id: updatedAppointment.id,
+      dateTime:
+        appointmentDateField && startTimeField
+          ? new Date(
+              `${
+                appointmentDateField instanceof Date
+                  ? appointmentDateField.toISOString().split('T')[0]
+                  : appointmentDateField
+              }T${startTimeField}Z`
+            )
+          : null,
+      status: updatedAppointment.status,
+      notes: updatedAppointment.notes,
+      tutor: {
+        name: tutorName,
+        email: tutorEmail,
+        subject: updatedAppointment.subject,
+      },
+      createdAt: createdAt,
+    };
+
+    console.log('📤 Sending response:', responseData);
 
     res.json({
       success: true,
       message: 'Appointment updated successfully',
-      data: {
-        id: updatedAppointment.id,
-        dateTime: new Date(
-          `${updatedAppointment.appointmentDate}T${updatedAppointment.startTime}`
-        ),
-        status: updatedAppointment.status,
-        notes: updatedAppointment.notes,
-        tutor: {
-          name: updatedAppointment.tutorName,
-          email: updatedAppointment.tutorEmail,
-          subject: updatedAppointment.subject,
-        },
-        createdAt: updatedAppointment.createdAt,
-      },
+      data: responseData,
     });
   } catch (error) {
     console.error('Error updating appointment:', error);

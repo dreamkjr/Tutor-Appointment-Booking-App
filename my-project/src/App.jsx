@@ -431,10 +431,29 @@ export default function App() {
   const confirmEdit = async (newSlot) => {
     try {
       setLoading((prev) => ({ ...prev, action: true }));
+      console.log('📝 Confirming edit with new slot:', newSlot);
+
+      // Ensure dateTime is properly formatted as ISO string
+      let dateTimeValue = newSlot.dateTime;
+      if (dateTimeValue instanceof Date) {
+        dateTimeValue = dateTimeValue.toISOString();
+      } else if (typeof dateTimeValue === 'string') {
+        // Make sure it's a valid date string
+        const testDate = new Date(dateTimeValue);
+        if (isNaN(testDate.getTime())) {
+          throw new Error('Invalid date format');
+        }
+        dateTimeValue = testDate.toISOString();
+      }
 
       const updateData = {
-        dateTime: newSlot.dateTime || new Date(newSlot.dateTime),
+        dateTime: dateTimeValue,
       };
+
+      console.log('📤 Sending update request:', {
+        appointmentId: modalState.data.id,
+        updateData,
+      });
 
       await apiService.updateAppointment(modalState.data.id, updateData);
 
@@ -443,9 +462,10 @@ export default function App() {
       await loadAvailableSlots();
 
       closeModal();
+      setError(''); // Clear any previous errors
     } catch (error) {
       console.error('Error updating appointment:', error);
-      setError('Failed to update appointment. Please try again.');
+      setError(`Failed to update appointment: ${error.message}`);
     } finally {
       setLoading((prev) => ({ ...prev, action: false }));
     }
