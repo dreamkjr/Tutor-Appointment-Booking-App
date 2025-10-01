@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './components/LoginPage';
 import Header from './components/Header';
@@ -15,11 +15,19 @@ import {
 import { useAppointments } from './hooks/useAppointments';
 import { useModal } from './hooks/useModal';
 import { GLOBAL_STYLES } from './constants';
+import { runAndLogDiagnostics } from './utils/debug';
 import type { TimeSlot, Appointment, TabType } from './types/index';
 
 // Main authenticated app component
 const AuthenticatedApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('booking');
+
+  // Run diagnostics on app load (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      runAndLogDiagnostics();
+    }
+  }, []);
 
   // Custom hooks for business logic
   const {

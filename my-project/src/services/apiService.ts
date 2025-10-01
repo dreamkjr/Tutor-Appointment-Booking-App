@@ -6,9 +6,11 @@ import {
   AppointmentCreateData,
   AppointmentUpdateData,
 } from '../types/index';
-
-const API_BASE_URL: string =
-  process.env.REACT_APP_API_URL || 'http://localhost:5000/api/v1';
+import {
+  getEnvironmentConfig,
+  getHealthCheckUrl,
+  logEnvironmentInfo,
+} from '../utils/environment';
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -16,9 +18,16 @@ interface RequestOptions extends RequestInit {
 
 class ApiService {
   private baseURL: string;
+  private healthCheckURL: string;
+  private config: ReturnType<typeof getEnvironmentConfig>;
 
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.config = getEnvironmentConfig();
+    this.baseURL = this.config.apiUrl;
+    this.healthCheckURL = getHealthCheckUrl();
+
+    // Log environment info for debugging
+    logEnvironmentInfo();
   }
 
   // Generic request method with error handling and type safety
@@ -29,8 +38,10 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
 
     const config: RequestInit = {
+      credentials: this.config.isCloudWorkstation ? 'include' : 'same-origin',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
         ...options.headers,
       },
       ...options,
@@ -108,9 +119,14 @@ class ApiService {
   // Check API health
   async healthCheck(): Promise<{ status: string; message?: string }> {
     try {
-      const response = await fetch(
-        `${this.baseURL.replace('/api/v1', '')}/health`
-      );
+      const response = await fetch(this.healthCheckURL, {
+        method: 'GET',
+        credentials: this.config.isCloudWorkstation ? 'include' : 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
       return await response.json();
     } catch (error) {
       console.error('Health check failed:', error);

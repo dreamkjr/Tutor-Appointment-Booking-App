@@ -31,19 +31,63 @@ app.use(
   })
 );
 
-// CORS configuration
+// CORS configuration with Google Cloud Workstations support
 const corsOptions = {
-  origin:
-    process.env.NODE_ENV === 'production'
-      ? ['https://your-frontend-domain.com']
-      : ['http://localhost:3000', 'http://localhost:5173'], // React and Vite default ports
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+
+    // Define allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173', // Vite default port
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+    ];
+
+    // Check for Google Cloud Workstations domains
+    if (origin.includes('cloudworkstations.dev')) {
+      return callback(null, true);
+    }
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // For production, add your specific domains
+    if (process.env.NODE_ENV === 'production') {
+      const productionDomains = (process.env.ALLOWED_ORIGINS || '').split(',');
+      if (productionDomains.includes(origin)) {
+        return callback(null, true);
+      }
+    }
+
+    console.warn(`CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-Forwarded-For',
+    'X-Forwarded-Proto',
+  ],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
   maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
