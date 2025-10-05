@@ -88,7 +88,7 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
                 disabled={slot.isBooked}
                 className={`relative font-medium py-3 px-4 rounded-lg transition-all duration-200 text-center min-h-[60px] flex flex-col justify-center ${
                   slot.isBooked
-                    ? 'bg-red-50 border-2 border-red-200 text-red-600 cursor-not-allowed opacity-70'
+                    ? 'bg-gray-100 border-2 border-gray-300 text-gray-500 cursor-not-allowed opacity-60 line-through'
                     : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 hover:shadow-lg transform hover:scale-105 active:scale-95'
                 }`}
                 title={
@@ -101,7 +101,7 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
                   {formatTime(new Date(slot.dateTime))}
                 </span>
                 {slot.isBooked ? (
-                  <span className="text-xs mt-1 font-medium">Booked</span>
+                  <span className="text-xs mt-1 font-medium text-gray-400">Unavailable</span>
                 ) : (
                   <span className="text-xs mt-1 opacity-75">Available</span>
                 )}

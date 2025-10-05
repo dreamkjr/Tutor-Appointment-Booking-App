@@ -27,6 +27,7 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
     new Date().toISOString().split('T')[0]
   );
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -35,6 +36,7 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
   // Load teachers on component mount
   useEffect(() => {
     loadTeachers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load subjects when teacher is selected
@@ -81,6 +83,16 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
       // Get all teachers - we'll create a new API endpoint for this
       const teachersData = await apiService.getAllTeachers();
       setTeachers(teachersData);
+      
+      // Set default teacher (first one) if available
+      if (teachersData.length > 0) {
+        const defaultTeacher = teachersData[0];
+        setSelectedTeacher(defaultTeacher);
+        // Load subjects for default teacher
+        loadTeacherSubjects(defaultTeacher.id);
+        // Load available dates for default teacher
+        loadAvailableDates(defaultTeacher.id);
+      }
     } catch (err) {
       setError('Failed to load teachers. Please try again.');
       console.error('Error loading teachers:', err);
@@ -94,19 +106,45 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
       setLoadingSubjects(true);
       setError('');
       const subjectsData = await apiService.getTutorSubjects(teacherId);
-      setSubjects(
-        subjectsData.map((ts) => ({
-          id: ts.subjectId,
-          name: ts.subjectName,
-          description: ts.subjectDescription || '',
-          is_active: ts.isActive,
-        }))
-      );
+      const mappedSubjects = subjectsData.map((ts) => ({
+        id: ts.subjectId,
+        name: ts.subjectName,
+        description: ts.subjectDescription || '',
+        is_active: ts.isActive,
+      }));
+      
+      setSubjects(mappedSubjects);
+      
+      // Set default subject (first one) if available
+      if (mappedSubjects.length > 0) {
+        setSelectedSubject(mappedSubjects[0]);
+      }
     } catch (err) {
       setError('Failed to load teacher subjects. Please try again.');
       console.error('Error loading teacher subjects:', err);
     } finally {
       setLoadingSubjects(false);
+    }
+  };
+
+  const loadAvailableDates = async (teacherId: number) => {
+    try {
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setDate(today.getDate() + 30);
+      
+      const startDateStr = today.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      const availableDatesData = await apiService.getTeacherAvailableDates(
+        teacherId,
+        startDateStr,
+        endDateStr
+      );
+      setAvailableDates(availableDatesData);
+    } catch (err) {
+      console.error('Error loading available dates:', err);
+      // Don't show error for this as it's not critical
     }
   };
 
@@ -116,6 +154,11 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
     setSelectedTeacher(teacher || null);
     setSelectedSubject(null);
     setAvailableSlots([]);
+    
+    if (teacher) {
+      loadTeacherSubjects(teacher.id);
+      loadAvailableDates(teacher.id);
+    }
   };
 
   const handleSubjectSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -131,7 +174,13 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
 
   const handleSlotSelect = (slot: AvailableSlot) => {
     if (selectedTeacher && selectedSubject) {
-      onBook(slot, selectedTeacher.name, selectedSubject.name);
+      // Ensure the slot has the correct subjectId from the selected subject
+      const enhancedSlot = {
+        ...slot,
+        subjectId: selectedSubject.id,
+        tutorId: selectedTeacher.id,
+      };
+      onBook(enhancedSlot, selectedTeacher.name, selectedSubject.name);
     }
   };
 
@@ -289,29 +338,37 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
               Select Date
             </label>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
-              {getNext30Days().map((date) => (
-                <button
-                  key={date.value}
-                  onClick={() => handleDateSelect(date.value)}
-                  className={`p-3 text-center border-2 rounded-lg transition-all duration-200 min-h-[70px] flex flex-col justify-center ${
-                    selectedDate === date.value
-                      ? 'border-blue-500 bg-blue-500 text-white shadow-lg transform scale-105'
-                      : date.isToday
-                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
-                      : !selectedTeacher || !selectedSubject
-                      ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md'
-                  }`}
-                  disabled={!selectedTeacher || !selectedSubject}
-                >
-                  <div className="text-sm font-semibold">
-                    {date.label.split(' ')[0]}
-                  </div>
-                  <div className="text-xs opacity-75">
-                    {date.label.split(' ').slice(1).join(' ')}
-                  </div>
-                </button>
-              ))}
+              {getNext30Days().map((date) => {
+                const isAvailable = selectedTeacher ? availableDates.includes(date.value) : false;
+                const isDisabled = !selectedTeacher || !selectedSubject || !isAvailable;
+                
+                return (
+                  <button
+                    key={date.value}
+                    onClick={() => handleDateSelect(date.value)}
+                    className={`p-3 text-center border-2 rounded-lg transition-all duration-200 min-h-[70px] flex flex-col justify-center ${
+                      selectedDate === date.value
+                        ? 'border-blue-500 bg-blue-500 text-white shadow-lg transform scale-105'
+                        : date.isToday && isAvailable
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
+                        : isDisabled
+                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md'
+                    }`}
+                    disabled={isDisabled}
+                  >
+                    <div className="text-sm font-semibold">
+                      {date.label.split(' ')[0]}
+                    </div>
+                    <div className="text-xs opacity-75">
+                      {date.label.split(' ').slice(1).join(' ')}
+                    </div>
+                    {!isAvailable && selectedTeacher && (
+                      <div className="text-xs text-red-400 mt-1">N/A</div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

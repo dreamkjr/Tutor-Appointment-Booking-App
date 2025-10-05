@@ -26,7 +26,7 @@ export const getAppointments = async (req, res) => {
       JOIN subjects s ON a.subject_id = s.id
       WHERE a.student_id = ${studentId}
         AND a.status != 'cancelled'
-      ORDER BY a.appointment_date ASC, a.start_time ASC
+      ORDER BY a.appointment_date DESC, a.start_time DESC
     `;
 
     console.log(
@@ -42,6 +42,7 @@ export const getAppointments = async (req, res) => {
       const startTime = appointment.start_time || appointment.startTime;
       const tutorName = appointment.tutor_name || appointment.tutorName;
       const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
+      const subjectName = appointment.subject_name || appointment.subjectName;
       const createdAt = appointment.created_at || appointment.createdAt;
 
       console.log('🔄 Processing appointment:', {
@@ -64,7 +65,7 @@ export const getAppointments = async (req, res) => {
         tutor: {
           name: tutorName,
           email: tutorEmail,
-          subject: appointment.subject,
+          subject: subjectName,
         },
         createdAt: createdAt,
       };
@@ -360,11 +361,10 @@ export const bookAppointment = async (req, res) => {
     const appointmentDateField =
       appointment.appointment_date || appointment.appointmentDate;
     const startTimeField = appointment.start_time || appointment.startTime;
-    const tutorName = appointment.tutor_name || appointment.tutorName;
-    const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
-    const createdAt = appointment.created_at || appointment.createdAt;
-
-    res.status(201).json({
+      const tutorName = appointment.tutor_name || appointment.tutorName;
+      const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
+      const subjectName = appointment.subject_name || appointment.subjectName;
+      const createdAt = appointment.created_at || appointment.createdAt;    res.status(201).json({
       success: true,
       message: 'Appointment booked successfully',
       data: {

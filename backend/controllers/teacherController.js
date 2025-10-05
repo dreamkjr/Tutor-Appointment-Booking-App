@@ -490,3 +490,53 @@ export const getTeacherAppointments = async (req, res) => {
     });
   }
 };
+
+// Get available dates for a teacher (dates where they have schedules)
+export const getTeacherAvailableDates = async (req, res) => {
+  try {
+    const { tutorId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date and end date are required',
+      });
+    }
+
+    // Get all days of the week that the teacher has schedules for
+    const schedules = await sql`
+      SELECT DISTINCT day_of_week
+      FROM teacher_schedules 
+      WHERE tutor_id = ${tutorId} 
+        AND is_active = true
+      ORDER BY day_of_week
+    `;
+
+    // Convert day numbers to actual dates within the range
+    const availableDates = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    // Get array of available days (0 = Sunday, 1 = Monday, etc.)
+    const availableDays = schedules.map(s => s.dayOfWeek || s.day_of_week);
+    
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      const dayOfWeek = date.getDay();
+      if (availableDays.includes(dayOfWeek)) {
+        availableDates.push(new Date(date).toISOString().split('T')[0]);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: availableDates,
+    });
+  } catch (error) {
+    console.error('Error fetching teacher available dates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch available dates',
+    });
+  }
+};

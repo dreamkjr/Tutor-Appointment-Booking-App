@@ -306,6 +306,18 @@ class ApiService {
       bio: teacher.bio,
     }));
   }
+
+  // Get available dates for a teacher
+  async getTeacherAvailableDates(
+    tutorId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<string[]> {
+    const response = await this.request<string[]>(
+      `/teachers/tutors/${tutorId}/available-dates?startDate=${startDate}&endDate=${endDate}`
+    );
+    return response.data || [];
+  }
 }
 
 // Create and export a singleton instance

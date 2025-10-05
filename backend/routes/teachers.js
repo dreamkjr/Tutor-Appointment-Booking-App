@@ -13,6 +13,7 @@ import {
   getTutorsBySubject,
   getAllTeachers,
   getTeacherAppointments,
+  getTeacherAvailableDates,
 } from '../controllers/teacherController.js';
 
 const router = express.Router();
@@ -40,5 +41,8 @@ router.get('/available-slots', getAvailableTimeSlots);
 
 // Teacher appointments
 router.get('/tutors/:tutorId/appointments', getTeacherAppointments);
+
+// Teacher available dates
+router.get('/tutors/:tutorId/available-dates', getTeacherAvailableDates);
 
 export default router;

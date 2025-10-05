@@ -20,10 +20,17 @@ const MyBookingsTab: React.FC<MyBookingsTabProps> = ({
   // Debug logging
   console.log('📋 MyBookingsTab received:', { myBookings, loading });
 
-  // Sort bookings by most recent booking time (createdAt) first
-  const sortedBookings = [...myBookings].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Sort bookings by most recent appointment date first, then by creation date
+  const sortedBookings = [...myBookings].sort((a, b) => {
+    const dateA = new Date(a.dateTime).getTime();
+    const dateB = new Date(b.dateTime).getTime();
+    // If appointment dates are different, sort by appointment date (newest first)
+    if (dateA !== dateB) {
+      return dateB - dateA;
+    }
+    // If appointment dates are the same, sort by creation date (newest first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   // Helper function to check if appointment is in the past
   const isPastAppointment = (dateTime: string | Date): boolean => {
