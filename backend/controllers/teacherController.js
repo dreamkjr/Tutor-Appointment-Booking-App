@@ -517,11 +517,15 @@ export const getTeacherAvailableDates = async (req, res) => {
     const availableDates = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     // Get array of available days (0 = Sunday, 1 = Monday, etc.)
-    const availableDays = schedules.map(s => s.dayOfWeek || s.day_of_week);
-    
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    const availableDays = schedules.map((s) => s.dayOfWeek || s.day_of_week);
+
+    for (
+      let date = new Date(start);
+      date <= end;
+      date.setDate(date.getDate() + 1)
+    ) {
       const dayOfWeek = date.getDay();
       if (availableDays.includes(dayOfWeek)) {
         availableDates.push(new Date(date).toISOString().split('T')[0]);

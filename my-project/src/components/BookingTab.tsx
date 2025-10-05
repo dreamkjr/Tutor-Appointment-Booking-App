@@ -83,7 +83,7 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
       // Get all teachers - we'll create a new API endpoint for this
       const teachersData = await apiService.getAllTeachers();
       setTeachers(teachersData);
-      
+
       // Set default teacher (first one) if available
       if (teachersData.length > 0) {
         const defaultTeacher = teachersData[0];
@@ -112,9 +112,9 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
         description: ts.subjectDescription || '',
         is_active: ts.isActive,
       }));
-      
+
       setSubjects(mappedSubjects);
-      
+
       // Set default subject (first one) if available
       if (mappedSubjects.length > 0) {
         setSelectedSubject(mappedSubjects[0]);
@@ -132,10 +132,10 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
       const today = new Date();
       const endDate = new Date();
       endDate.setDate(today.getDate() + 30);
-      
+
       const startDateStr = today.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
-      
+
       const availableDatesData = await apiService.getTeacherAvailableDates(
         teacherId,
         startDateStr,
@@ -154,7 +154,7 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
     setSelectedTeacher(teacher || null);
     setSelectedSubject(null);
     setAvailableSlots([]);
-    
+
     if (teacher) {
       loadTeacherSubjects(teacher.id);
       loadAvailableDates(teacher.id);
@@ -339,9 +339,12 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
             </label>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
               {getNext30Days().map((date) => {
-                const isAvailable = selectedTeacher ? availableDates.includes(date.value) : false;
-                const isDisabled = !selectedTeacher || !selectedSubject || !isAvailable;
-                
+                const isAvailable = selectedTeacher
+                  ? availableDates.includes(date.value)
+                  : false;
+                const isDisabled =
+                  !selectedTeacher || !selectedSubject || !isAvailable;
+
                 return (
                   <button
                     key={date.value}

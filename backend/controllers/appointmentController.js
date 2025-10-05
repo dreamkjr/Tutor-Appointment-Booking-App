@@ -361,10 +361,11 @@ export const bookAppointment = async (req, res) => {
     const appointmentDateField =
       appointment.appointment_date || appointment.appointmentDate;
     const startTimeField = appointment.start_time || appointment.startTime;
-      const tutorName = appointment.tutor_name || appointment.tutorName;
-      const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
-      const subjectName = appointment.subject_name || appointment.subjectName;
-      const createdAt = appointment.created_at || appointment.createdAt;    res.status(201).json({
+    const tutorName = appointment.tutor_name || appointment.tutorName;
+    const tutorEmail = appointment.tutor_email || appointment.tutorEmail;
+    const subjectName = appointment.subject_name || appointment.subjectName;
+    const createdAt = appointment.created_at || appointment.createdAt;
+    res.status(201).json({
       success: true,
       message: 'Appointment booked successfully',
       data: {

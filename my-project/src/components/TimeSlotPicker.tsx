@@ -101,7 +101,9 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
                   {formatTime(new Date(slot.dateTime))}
                 </span>
                 {slot.isBooked ? (
-                  <span className="text-xs mt-1 font-medium text-gray-400">Unavailable</span>
+                  <span className="text-xs mt-1 font-medium text-gray-400">
+                    Unavailable
+                  </span>
                 ) : (
                   <span className="text-xs mt-1 opacity-75">Available</span>
                 )}
