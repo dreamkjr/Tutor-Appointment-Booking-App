@@ -17,12 +17,13 @@ export const getAppointments = async (req, res) => {
         a.status,
         a.notes,
         a.created_at,
-        t.subject,
+        s.name as subject_name,
         u.name as tutor_name,
         u.email as tutor_email
       FROM appointments a
       JOIN tutors t ON a.tutor_id = t.id
       JOIN users u ON t.user_id = u.id
+      JOIN subjects s ON a.subject_id = s.id
       WHERE a.student_id = ${studentId}
         AND a.status != 'cancelled'
       ORDER BY a.appointment_date ASC, a.start_time ASC
@@ -93,17 +94,18 @@ export const getAvailableSlots = async (req, res) => {
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 7);
 
-    // Get all active tutors
+    // Get all active tutors with their subjects
     const tutors = await sql`
-      SELECT 
+      SELECT DISTINCT
         t.id,
-        t.availability_start,
-        t.availability_end,
         u.name as tutor_name,
-        t.subject
+        ts.subject_id,
+        s.name as subject_name
       FROM tutors t
       JOIN users u ON t.user_id = u.id
-      WHERE t.is_active = true
+      JOIN tutor_subjects ts ON t.id = ts.tutor_id
+      JOIN subjects s ON ts.subject_id = s.id
+      WHERE t.is_active = true AND ts.is_active = true
     `;
 
     if (tutors.length === 0) {
@@ -186,8 +188,8 @@ export const getAvailableSlots = async (req, res) => {
           id: slotKey,
           dateTime: slotDateTime,
           tutorId: tutor.id,
-          tutorName: tutor.tutorName,
-          subject: tutor.subject,
+          tutorName: tutor.tutor_name || tutor.tutorName,
+          subject: tutor.subject_name || tutor.subjectName,
           isBooked: isBooked,
         });
 
@@ -230,8 +232,14 @@ export const bookAppointment = async (req, res) => {
       });
     }
 
-    const { dateTime, tutorId, studentId, notes = '' } = req.body;
-    console.log('📋 Extracted data:', { dateTime, tutorId, studentId, notes });
+    const { dateTime, tutorId, studentId, subjectId, notes = '' } = req.body;
+    console.log('📋 Extracted data:', {
+      dateTime,
+      tutorId,
+      studentId,
+      subjectId,
+      notes,
+    });
 
     // Validate required fields
     if (!studentId) {
@@ -298,6 +306,7 @@ export const bookAppointment = async (req, res) => {
     const existingAppointment = await sql`
       SELECT id FROM appointments
       WHERE tutor_id = ${tutorId}
+        AND subject_id = ${subjectId}
         AND appointment_date = ${dateStr}
         AND start_time = ${startTime}
         AND status = 'scheduled'
@@ -310,10 +319,18 @@ export const bookAppointment = async (req, res) => {
       });
     }
 
+    // Validate subject_id is provided
+    if (!subjectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Subject ID is required',
+      });
+    }
+
     // Create the appointment
     const newAppointment = await sql`
-      INSERT INTO appointments (student_id, tutor_id, appointment_date, start_time, end_time, status, notes)
-      VALUES (${studentId}, ${tutorId}, ${dateStr}, ${startTime}, ${endTime}, 'scheduled', ${notes})
+      INSERT INTO appointments (student_id, tutor_id, subject_id, appointment_date, start_time, end_time, status, notes)
+      VALUES (${studentId}, ${tutorId}, ${subjectId}, ${dateStr}, ${startTime}, ${endTime}, 'scheduled', ${notes})
       RETURNING *
     `;
 
@@ -327,12 +344,13 @@ export const bookAppointment = async (req, res) => {
         a.status,
         a.notes,
         a.created_at,
-        t.subject,
+        s.name as subject_name,
         u.name as tutor_name,
         u.email as tutor_email
       FROM appointments a
       JOIN tutors t ON a.tutor_id = t.id
       JOIN users u ON t.user_id = u.id
+      JOIN subjects s ON a.subject_id = s.id
       WHERE a.id = ${newAppointment[0].id}
     `;
 

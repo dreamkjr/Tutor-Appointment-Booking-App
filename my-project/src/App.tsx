@@ -1,238 +1,117 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import LoginPage from './components/LoginPage';
-import Header from './components/Header';
-import Modal from './components/ui/Modal';
-import TabNavigation from './components/TabNavigation';
-import BookingTab from './components/BookingTab';
-import MyBookingsTab from './components/MyBookingsTab';
-import {
-  BookingConfirmationModal,
-  EditBookingModal,
-  RescheduleConfirmationModal,
-  CancelConfirmationModal,
-} from './components/ModalContent';
-import { useAppointments } from './hooks/useAppointments';
-import { useModal } from './hooks/useModal';
+// Enhanced App component with teacher portal support
+import React, { useState } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import StudentApp from './StudentApp';
+import TeacherPortal from './components/TeacherPortal';
 import { GLOBAL_STYLES } from './constants';
-import { runAndLogDiagnostics } from './utils/debug';
-import type { TimeSlot, Appointment, TabType } from './types/index';
 
-// Main authenticated app component
-const AuthenticatedApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('booking');
+type UserType = 'student' | 'teacher' | null;
 
-  // Run diagnostics on app load (development only)
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      runAndLogDiagnostics();
-    }
-  }, []);
+const App: React.FC = () => {
+  const [userType, setUserType] = useState<UserType>(null);
 
-  // Custom hooks for business logic
-  const {
-    bookings,
-    availableSlots,
-    loading,
-    error,
-    bookAppointment,
-    updateAppointment,
-    cancelAppointment,
-    clearError,
-  } = useAppointments();
-
-  const {
-    modalState,
-    selectedNewSlot,
-    openModal,
-    closeModal,
-    handleSlotSelectionForEdit,
-    returnToEditBooking,
-  } = useModal();
-
-  // Event handlers
-  const handleBookAppointment = (slot: TimeSlot): void => {
-    openModal('confirmBooking', slot);
+  const selectUserType = (type: UserType) => {
+    setUserType(type);
   };
 
-  const handleEditAppointment = (booking: Appointment): void => {
-    openModal('editBooking', booking);
+  const resetUserType = () => {
+    setUserType(null);
   };
 
-  const handleCancelAppointment = (booking: Appointment): void => {
-    openModal('confirmCancel', booking);
-  };
-
-  // Modal action handlers
-  const confirmBooking = async () => {
-    const result = await bookAppointment(modalState.data);
-    if (result.success) {
-      closeModal();
-    }
-  };
-
-  const confirmEdit = async () => {
-    if (!selectedNewSlot || !modalState.data?.originalBooking) {
-      return;
-    }
-
-    const result = await updateAppointment(
-      modalState.data.originalBooking.id,
-      selectedNewSlot
-    );
-
-    if (result.success) {
-      closeModal();
-    }
-  };
-
-  const confirmCancel = async () => {
-    const result = await cancelAppointment(modalState.data.id);
-    if (result.success) {
-      closeModal();
-    }
-  };
-
-  // Render modal content based on type
-  const renderModalContent = () => {
-    const { type, data } = modalState;
-
-    switch (type) {
-      case 'confirmBooking':
-        return (
-          <BookingConfirmationModal
-            slot={data}
-            onConfirm={confirmBooking}
-            onCancel={closeModal}
-            loading={loading.action}
-          />
-        );
-
-      case 'editBooking':
-        return (
-          <EditBookingModal
-            booking={data}
-            availableSlots={availableSlots}
-            onSelectSlot={(newSlot: TimeSlot) =>
-              handleSlotSelectionForEdit(newSlot, data)
-            }
-            loading={loading.slots}
-          />
-        );
-
-      case 'confirmReschedule':
-        return (
-          <RescheduleConfirmationModal
-            originalBooking={data.originalBooking}
-            newSlot={data.newSlot}
-            onConfirm={confirmEdit}
-            onBack={() => returnToEditBooking(data.originalBooking)}
-            loading={loading.action}
-          />
-        );
-
-      case 'confirmCancel':
-        return (
-          <CancelConfirmationModal
-            booking={data}
-            onConfirm={confirmCancel}
-            onCancel={closeModal}
-            loading={loading.action}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <>
-      <style>{GLOBAL_STYLES}</style>
-
-      {/* Header with user info */}
-      <Header />
-
-      {/* Main Content */}
-      <div className="bg-gradient-to-br from-gray-50 via-white to-blue-50 min-h-screen pt-4">
-        <div className="container mx-auto max-w-4xl p-4">
-          {/* Error Alert */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex justify-between items-center">
-              <div className="text-red-800 font-medium">{error}</div>
+  // Landing page for user type selection
+  if (!userType) {
+    return (
+      <div>
+        <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+          <div className="max-w-md w-full">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Tutor Booking System
+              </h1>
+              <p className="text-gray-600">
+                Choose how you'd like to access the platform
+              </p>
+            </div>
+            
+            <div className="space-y-4">
               <button
-                onClick={clearError}
-                className="text-red-600 hover:text-red-800 font-bold text-lg"
+                onClick={() => selectUserType('student')}
+                className="w-full bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 hover:border-blue-300 transition-all text-left"
               >
-                ×
+                <div className="flex items-center">
+                  <div className="bg-blue-100 p-3 rounded-full mr-4">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">I'm a Student</h3>
+                    <p className="text-gray-600 text-sm">Book tutoring sessions with teachers</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => selectUserType('teacher')}
+                className="w-full bg-white p-6 rounded-lg shadow-md hover:shadow-lg border border-gray-200 hover:border-blue-300 transition-all text-left"
+              >
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-3 rounded-full mr-4">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">I'm a Teacher</h3>
+                    <p className="text-gray-600 text-sm">Manage schedule and subjects</p>
+                  </div>
+                </div>
               </button>
             </div>
-          )}
 
-          {/* Tab Navigation */}
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-
-          {/* Tab Content */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            {activeTab === 'booking' && (
-              <BookingTab
-                availableSlots={availableSlots}
-                onBook={handleBookAppointment}
-                loading={loading.slots}
-              />
-            )}
-            {activeTab === 'mybookings' && (
-              <MyBookingsTab
-                myBookings={bookings}
-                onEdit={handleEditAppointment}
-                onCancel={handleCancelAppointment}
-                loading={loading.bookings}
-              />
-            )}
+            <div className="mt-8 text-center">
+              <p className="text-sm text-gray-500">
+                Demo application for tutoring appointment management
+              </p>
+            </div>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Modal */}
-      <Modal isOpen={modalState.isOpen} onClose={closeModal}>
-        {renderModalContent()}
-      </Modal>
-    </>
-  );
-};
-
-// Main App wrapper with authentication
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-};
-
-// App content that checks authentication state
-const AppContent: React.FC = () => {
-  const { user, isLoading } = useAuth();
-
-  // Show loading state
-  if (isLoading) {
+  // Render based on selected user type
+  if (userType === 'teacher') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
+      <div>
+        <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
+        <TeacherPortal />
+        <button
+          onClick={resetUserType}
+          className="fixed bottom-4 right-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm"
+        >
+          Switch User Type
+        </button>
       </div>
     );
   }
 
-  // Show login page if not authenticated
-  if (!user) {
-    return <LoginPage />;
-  }
-
-  // Show main app if authenticated
-  return <AuthenticatedApp />;
+  // Student app with AuthProvider
+  return (
+    <div>
+      <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />
+      <AuthProvider>
+        <StudentApp />
+        <button
+          onClick={resetUserType}
+          className="fixed bottom-4 right-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm"
+        >
+          Switch User Type
+        </button>
+      </AuthProvider>
+    </div>
+  );
 };
 
 export default App;

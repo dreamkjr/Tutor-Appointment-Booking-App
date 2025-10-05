@@ -1,32 +1,374 @@
-// BookingTab component - handles the booking interface
-import React from 'react';
+// BookingTab component - single page booking interface with teacher and subject dropdowns
+import React, { useState, useEffect } from 'react';
 import TimeSlotPicker from './TimeSlotPicker';
-import type { TimeSlot } from '../types/index';
+import apiService from '../services/apiService';
+import { formatDateHeader } from '../utils/dateUtils';
+import { BookIcon, UserIcon, CalendarIcon, ChevronDownIcon } from './ui/Icons';
+import type { Subject, AvailableSlot } from '../types/index';
 
 interface BookingTabProps {
-  availableSlots: TimeSlot[];
-  onBook: (slot: TimeSlot) => void;
-  loading: boolean;
+  onBook: (slot: AvailableSlot, tutorName: string, subjectName: string) => void;
 }
 
-const BookingTab: React.FC<BookingTabProps> = ({
-  availableSlots,
-  onBook,
-  loading,
-}) => {
+interface Teacher {
+  id: number;
+  name: string;
+  email: string;
+  experienceYears?: number;
+  bio?: string;
+}
+
+const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [error, setError] = useState('');
+
+  // Load teachers on component mount
+  useEffect(() => {
+    loadTeachers();
+  }, []);
+
+  // Load subjects when teacher is selected
+  useEffect(() => {
+    if (selectedTeacher) {
+      loadTeacherSubjects(selectedTeacher.id);
+    } else {
+      setSubjects([]);
+      setSelectedSubject(null);
+    }
+  }, [selectedTeacher]);
+
+  // Load available slots when teacher, subject, and date are selected
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (selectedTeacher && selectedSubject && selectedDate) {
+        try {
+          setLoadingSlots(true);
+          setError('');
+          const slots = await apiService.getAvailableTimeSlots(
+            selectedTeacher.id,
+            selectedSubject.id,
+            selectedDate
+          );
+          setAvailableSlots(slots);
+        } catch (err) {
+          setError('Failed to load available slots. Please try again.');
+          console.error('Error loading slots:', err);
+        } finally {
+          setLoadingSlots(false);
+        }
+      } else {
+        setAvailableSlots([]);
+      }
+    };
+
+    loadSlots();
+  }, [selectedTeacher, selectedSubject, selectedDate]);
+
+  const loadTeachers = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      // Get all teachers - we'll create a new API endpoint for this
+      const teachersData = await apiService.getAllTeachers();
+      setTeachers(teachersData);
+    } catch (err) {
+      setError('Failed to load teachers. Please try again.');
+      console.error('Error loading teachers:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTeacherSubjects = async (teacherId: number) => {
+    try {
+      setLoadingSubjects(true);
+      setError('');
+      const subjectsData = await apiService.getTutorSubjects(teacherId);
+      setSubjects(
+        subjectsData.map((ts) => ({
+          id: ts.subjectId,
+          name: ts.subjectName,
+          description: ts.subjectDescription || '',
+          is_active: ts.isActive,
+        }))
+      );
+    } catch (err) {
+      setError('Failed to load teacher subjects. Please try again.');
+      console.error('Error loading teacher subjects:', err);
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  const handleTeacherSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const teacherId = parseInt(e.target.value);
+    const teacher = teachers.find((t) => t.id === teacherId);
+    setSelectedTeacher(teacher || null);
+    setSelectedSubject(null);
+    setAvailableSlots([]);
+  };
+
+  const handleSubjectSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const subjectId = parseInt(e.target.value);
+    const subject = subjects.find((s) => s.id === subjectId);
+    setSelectedSubject(subject || null);
+    setAvailableSlots([]);
+  };
+
+  const handleDateSelect = (date: string) => {
+    setSelectedDate(date);
+  };
+
+  const handleSlotSelect = (slot: AvailableSlot) => {
+    if (selectedTeacher && selectedSubject) {
+      onBook(slot, selectedTeacher.name, selectedSubject.name);
+    }
+  };
+
+  // Generate next 30 days for date selection
+  const getNext30Days = () => {
+    const days = [];
+    const today = new Date();
+
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      const value = date.toISOString().split('T')[0];
+      const label = date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+
+      days.push({
+        value,
+        label,
+        isToday: i === 0,
+      });
+    }
+
+    return days;
+  };
+
   return (
-    <div className="p-4 sm:p-6 animate-fade-in">
-      <h2 className="text-2xl font-bold text-gray-800 mb-1">
-        Book an Appointment
-      </h2>
-      <p className="text-gray-500 mb-6">
-        Select an available time slot below to schedule your session.
-      </p>
-      <TimeSlotPicker
-        availableSlots={availableSlots}
-        onSelectSlot={onBook}
-        loading={loading}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-2 sm:p-4 md:p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Book an Appointment
+          </h2>
+          <p className="text-gray-600 text-lg">
+            Select a teacher, subject, date and time slot for your tutoring
+            session.
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-8">
+          {/* Teacher Selection */}
+          <div className="bg-white">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
+              <UserIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Select Teacher
+            </label>
+            <div className="relative">
+              <select
+                value={selectedTeacher?.id || ''}
+                onChange={handleTeacherSelect}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-10 text-gray-900 shadow-sm hover:border-gray-300 transition-all duration-200"
+                disabled={loading}
+              >
+                <option value="" className="text-gray-500">
+                  Choose a teacher...
+                </option>
+                {teachers.map((teacher) => (
+                  <option
+                    key={teacher.id}
+                    value={teacher.id}
+                    className="text-gray-900"
+                  >
+                    {teacher.name}{' '}
+                    {teacher.experienceYears &&
+                      `(${teacher.experienceYears} years exp.)`}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+            {loading && (
+              <p className="text-sm text-gray-500 mt-2 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading teachers...
+              </p>
+            )}
+          </div>
+
+          {/* Subject Selection */}
+          <div className="bg-white">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
+              <BookIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Select Subject
+            </label>
+            <div className="relative">
+              <select
+                value={selectedSubject?.id || ''}
+                onChange={handleSubjectSelect}
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white pr-10 text-gray-900 shadow-sm transition-all duration-200 ${
+                  !selectedTeacher || loadingSubjects
+                    ? 'border-gray-200 cursor-not-allowed opacity-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                disabled={!selectedTeacher || loadingSubjects}
+              >
+                <option value="" className="text-gray-500">
+                  {!selectedTeacher
+                    ? 'Select a teacher first...'
+                    : 'Choose a subject...'}
+                </option>
+                {subjects.map((subject) => (
+                  <option
+                    key={subject.id}
+                    value={subject.id}
+                    className="text-gray-900"
+                  >
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+            {loadingSubjects && (
+              <p className="text-sm text-gray-500 mt-2 flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                Loading subjects...
+              </p>
+            )}
+          </div>
+
+          {/* Date Selection */}
+          <div className="bg-white">
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-3">
+              <CalendarIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Select Date
+            </label>
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+              {getNext30Days().map((date) => (
+                <button
+                  key={date.value}
+                  onClick={() => handleDateSelect(date.value)}
+                  className={`p-3 text-center border-2 rounded-lg transition-all duration-200 min-h-[70px] flex flex-col justify-center ${
+                    selectedDate === date.value
+                      ? 'border-blue-500 bg-blue-500 text-white shadow-lg transform scale-105'
+                      : date.isToday
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
+                      : !selectedTeacher || !selectedSubject
+                      ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md'
+                  }`}
+                  disabled={!selectedTeacher || !selectedSubject}
+                >
+                  <div className="text-sm font-semibold">
+                    {date.label.split(' ')[0]}
+                  </div>
+                  <div className="text-xs opacity-75">
+                    {date.label.split(' ').slice(1).join(' ')}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Slots */}
+          {selectedTeacher && selectedSubject && selectedDate && (
+            <div className="bg-white border-t pt-8">
+              <div className="flex items-center mb-6">
+                <CalendarIcon className="w-6 h-6 mr-3 text-blue-600" />
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Available Time Slots
+                </h3>
+              </div>
+
+              {loadingSlots ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                  <span className="text-gray-600 font-medium">
+                    Loading available slots...
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <svg
+                          className="h-5 w-5 text-blue-600"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-blue-900 font-medium">
+                          <strong>Selected:</strong> {selectedSubject.name} with{' '}
+                          {selectedTeacher.name} on{' '}
+                          {formatDateHeader(new Date(selectedDate))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <TimeSlotPicker
+                    availableSlots={availableSlots}
+                    onSelectSlot={handleSlotSelect}
+                    loading={loadingSlots}
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -5,6 +5,12 @@ import {
   TimeSlot,
   AppointmentCreateData,
   AppointmentUpdateData,
+  Subject,
+  TutorWithSubject,
+  TutorSubject,
+  TeacherSchedule,
+  TeacherAppointment,
+  AvailableSlot,
 } from '../types/index';
 import {
   getEnvironmentConfig,
@@ -73,11 +79,13 @@ class ApiService {
     return response.data || [];
   }
 
-  // Get available time slots
+  // Get available time slots (legacy - redirects to teachers endpoint)
   async getAvailableSlots(date: string | null = null): Promise<TimeSlot[]> {
-    const query = date ? `?date=${date}` : '';
+    // For now, redirect to teachers endpoint with default tutor and subject
+    // In a real app, this would be handled differently
+    const defaultDate = date || new Date().toISOString().split('T')[0];
     const response = await this.request<TimeSlot[]>(
-      `/appointments/available-slots${query}`
+      `/teachers/available-slots?tutorId=1&subjectId=1&date=${defaultDate}`
     );
     return response.data || [];
   }
@@ -146,6 +154,157 @@ class ApiService {
   async getStudentById(studentId: number): Promise<any> {
     const response = await this.request<any>(`/students/${studentId}`);
     return response.data;
+  }
+
+  // Teacher/Subject Management Methods
+
+  // Get all subjects
+  async getSubjects(): Promise<Subject[]> {
+    const response = await this.request<Subject[]>('/teachers/subjects');
+    return response.data || [];
+  }
+
+  // Get tutors by subject
+  async getTutorsBySubject(subjectId: number): Promise<TutorWithSubject[]> {
+    const response = await this.request<TutorWithSubject[]>(
+      `/teachers/subjects/${subjectId}/tutors`
+    );
+    return response.data || [];
+  }
+
+  // Get tutor's subjects
+  async getTutorSubjects(tutorId: number): Promise<TutorSubject[]> {
+    const response = await this.request<TutorSubject[]>(
+      `/teachers/tutors/${tutorId}/subjects`
+    );
+    return response.data || [];
+  }
+
+  // Add subject to tutor
+  async addTutorSubject(
+    tutorId: number,
+    subjectId: number
+  ): Promise<TutorSubject> {
+    const response = await this.request<TutorSubject>(
+      `/teachers/tutors/${tutorId}/subjects`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ subjectId }),
+      }
+    );
+    return response.data!;
+  }
+
+  // Remove subject from tutor
+  async removeTutorSubject(tutorId: number, subjectId: number): Promise<void> {
+    await this.request(`/teachers/tutors/${tutorId}/subjects/${subjectId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get teacher's schedule
+  async getTeacherSchedule(tutorId: number): Promise<TeacherSchedule[]> {
+    const response = await this.request<TeacherSchedule[]>(
+      `/teachers/tutors/${tutorId}/schedule`
+    );
+    return response.data || [];
+  }
+
+  // Add schedule slot
+  async addScheduleSlot(
+    tutorId: number,
+    scheduleData: {
+      subjectId: number;
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+    }
+  ): Promise<TeacherSchedule> {
+    const response = await this.request<TeacherSchedule>(
+      `/teachers/tutors/${tutorId}/schedule`,
+      {
+        method: 'POST',
+        body: JSON.stringify(scheduleData),
+      }
+    );
+    return response.data!;
+  }
+
+  // Update schedule slot
+  async updateScheduleSlot(
+    tutorId: number,
+    scheduleId: number,
+    scheduleData: {
+      subjectId: number;
+      dayOfWeek: number;
+      startTime: string;
+      endTime: string;
+    }
+  ): Promise<TeacherSchedule> {
+    const response = await this.request<TeacherSchedule>(
+      `/teachers/tutors/${tutorId}/schedule/${scheduleId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(scheduleData),
+      }
+    );
+    return response.data!;
+  }
+
+  // Delete schedule slot
+  async deleteScheduleSlot(tutorId: number, scheduleId: number): Promise<void> {
+    await this.request(`/teachers/tutors/${tutorId}/schedule/${scheduleId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Get available time slots for booking
+  async getAvailableTimeSlots(
+    tutorId: number,
+    subjectId: number,
+    date: string
+  ): Promise<AvailableSlot[]> {
+    const response = await this.request<AvailableSlot[]>(
+      `/teachers/available-slots?tutorId=${tutorId}&subjectId=${subjectId}&date=${date}`
+    );
+    return response.data || [];
+  }
+
+  // Get teacher's appointments
+  async getTeacherAppointments(tutorId: number): Promise<TeacherAppointment[]> {
+    const response = await this.request<TeacherAppointment[]>(
+      `/teachers/tutors/${tutorId}/appointments`
+    );
+    return response.data || [];
+  }
+
+  // Get all teachers for booking selection
+  async getAllTeachers(): Promise<
+    Array<{
+      id: number;
+      name: string;
+      email: string;
+      experienceYears?: number;
+      bio?: string;
+    }>
+  > {
+    const response = await this.request<
+      Array<{
+        id: number;
+        name: string;
+        email: string;
+        experience_years?: number;
+        bio?: string;
+      }>
+    >('/teachers/all');
+
+    return (response.data || []).map((teacher) => ({
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.email,
+      experienceYears: teacher.experience_years,
+      bio: teacher.bio,
+    }));
   }
 }
 

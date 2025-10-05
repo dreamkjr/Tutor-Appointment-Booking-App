@@ -6,7 +6,7 @@ import TimeSlotPicker from './TimeSlotPicker';
 import type { TimeSlot, Appointment } from '../types/index';
 
 interface BookingConfirmationModalProps {
-  slot: TimeSlot;
+  slot: any; // Enhanced slot with tutorName and subject
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;

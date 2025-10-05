@@ -8,6 +8,7 @@ import { testConnection } from './db.js';
 // Import routes
 import appointmentRoutes from './routes/appointments.js';
 import studentRoutes from './routes/students.js';
+import teacherRoutes from './routes/teachers.js';
 
 // Load environment variables
 dotenv.config();
@@ -139,6 +140,7 @@ app.get('/health', async (req, res) => {
 // API routes
 app.use('/api/v1/appointments', appointmentRoutes);
 app.use('/api/v1/students', studentRoutes);
+app.use('/api/v1/teachers', teacherRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

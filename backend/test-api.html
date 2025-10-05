@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>API Test</title>
+  </head>
+  <body>
+    <h1>Teacher Portal API Test</h1>
+    <div id="results"></div>
+
+    <script>
+      const apiUrl = 'http://localhost:5000/api/v1';
+      const results = document.getElementById('results');
+
+      async function testAPI() {
+        try {
+          // Test 1: Get subjects
+          console.log('Testing get subjects...');
+          const subjectsResponse = await fetch(`${apiUrl}/teachers/subjects`);
+          const subjects = await subjectsResponse.json();
+          results.innerHTML += `<h3>Subjects: ${
+            subjects.success ? '✅' : '❌'
+          }</h3>`;
+
+          // Test 2: Get tutor subjects
+          console.log('Testing get tutor subjects...');
+          const tutorSubjectsResponse = await fetch(
+            `${apiUrl}/teachers/tutors/1/subjects`
+          );
+          const tutorSubjects = await tutorSubjectsResponse.json();
+          results.innerHTML += `<h3>Tutor Subjects: ${
+            tutorSubjects.success ? '✅' : '❌'
+          }</h3>`;
+
+          // Test 3: Add subject
+          console.log('Testing add subject...');
+          const addResponse = await fetch(
+            `${apiUrl}/teachers/tutors/1/subjects`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ subjectId: 5, hourlyRate: 75 }),
+            }
+          );
+          const addResult = await addResponse.json();
+          results.innerHTML += `<h3>Add Subject: ${
+            addResult.success ? '✅' : '❌'
+          }</h3>`;
+        } catch (error) {
+          results.innerHTML += `<h3>Error: ${error.message}</h3>`;
+          console.error('API test error:', error);
+        }
+      }
+
+      testAPI();
+    </script>
+  </body>
+</html>

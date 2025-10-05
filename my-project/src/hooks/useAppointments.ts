@@ -102,6 +102,7 @@ export const useAppointments = (): UseAppointmentsReturn => {
             ? slot.dateTime
             : new Date(slot.dateTime).toISOString(),
         tutorId: slot.tutorId,
+        subjectId: slot.subjectId || 1, // Use the subjectId from slot or default to 1
         studentId: user.id, // Include the authenticated user's ID
         notes: '',
       };
