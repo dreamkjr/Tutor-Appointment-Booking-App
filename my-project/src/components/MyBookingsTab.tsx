@@ -1,6 +1,6 @@
 // MyBookingsTab component - displays user's current bookings with edit/cancel options
 import React from 'react';
-import { formatDateHeader, formatTime } from '../utils/dateUtils';
+import { formatDateHeader, formatTimeRange } from '../utils/dateUtils';
 import { CalendarIcon, ClockIcon, EditIcon, TrashIcon } from './ui/Icons';
 import type { Appointment } from '../types/index';
 
@@ -90,7 +90,7 @@ const MyBookingsTab: React.FC<MyBookingsTabProps> = ({
                         isPast ? 'text-gray-400' : 'text-blue-600'
                       }`}
                     />
-                    {formatTime(new Date(booking.dateTime))}
+                    {formatTimeRange(new Date(booking.dateTime))}
                   </div>
                   {booking.tutor && (
                     <div

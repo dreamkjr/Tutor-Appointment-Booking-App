@@ -1,6 +1,6 @@
 // Modal content components for different types of modals
 import React from 'react';
-import { formatDateHeader, formatTime } from '../utils/dateUtils';
+import { formatDateHeader, formatTimeRange } from '../utils/dateUtils';
 import { CalendarIcon, ClockIcon, AlertTriangleIcon } from './ui/Icons';
 import TimeSlotPicker from './TimeSlotPicker';
 import type { TimeSlot, Appointment } from '../types/index';
@@ -30,7 +30,7 @@ export const BookingConfirmationModal: React.FC<
             {formatDateHeader(new Date(slot.dateTime))}
           </div>
           <div className="text-green-700">
-            {formatTime(new Date(slot.dateTime))}
+            {formatTimeRange(new Date(slot.dateTime))}
           </div>
           <div className="text-green-600 text-xs mt-1">
             with {slot.tutorName} ({slot.subject})
@@ -84,7 +84,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
       <div className="font-semibold text-blue-800">Current Appointment:</div>
       <div className="text-blue-700">
         {formatDateHeader(new Date(booking.dateTime))} at{' '}
-        {formatTime(new Date(booking.dateTime))}
+        {formatTimeRange(new Date(booking.dateTime))}
       </div>
     </div>
     <div className="max-h-64 overflow-y-auto pr-2">
@@ -124,7 +124,7 @@ export const RescheduleConfirmationModal: React.FC<
             <div className="font-semibold text-red-800">From:</div>
             <div className="text-red-700">
               {formatDateHeader(new Date(originalBooking.dateTime))} at{' '}
-              {formatTime(new Date(originalBooking.dateTime))}
+              {formatTimeRange(new Date(originalBooking.dateTime))}
             </div>
           </div>
 
@@ -132,7 +132,7 @@ export const RescheduleConfirmationModal: React.FC<
             <div className="font-semibold text-green-800">To:</div>
             <div className="text-green-700">
               {formatDateHeader(new Date(newSlot.dateTime))} at{' '}
-              {formatTime(new Date(newSlot.dateTime))}
+              {formatTimeRange(new Date(newSlot.dateTime))}
             </div>
           </div>
         </div>
@@ -186,7 +186,7 @@ export const CancelConfirmationModal: React.FC<
             {formatDateHeader(new Date(booking.dateTime))}
           </div>
           <div className="text-red-700">
-            {formatTime(new Date(booking.dateTime))}
+            {formatTimeRange(new Date(booking.dateTime))}
           </div>
         </div>
       </div>
