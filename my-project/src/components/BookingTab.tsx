@@ -28,6 +28,7 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
   );
   const [availableSlots, setAvailableSlots] = useState<AvailableSlot[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [fullyBookedDates, setFullyBookedDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -142,9 +143,53 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
         endDateStr
       );
       setAvailableDates(availableDatesData);
+
+      // Check which dates are fully booked if we have a selected subject
+      if (selectedSubject) {
+        checkFullyBookedDates(
+          teacherId,
+          selectedSubject.id,
+          availableDatesData
+        );
+      }
     } catch (err) {
       console.error('Error loading available dates:', err);
       // Don't show error for this as it's not critical
+    }
+  };
+
+  const checkFullyBookedDates = async (
+    teacherId: number,
+    subjectId: number,
+    dates: string[]
+  ) => {
+    try {
+      const fullyBooked: string[] = [];
+
+      // Check first few dates to avoid too many API calls
+      const datesToCheck = dates.slice(0, 10); // Check first 10 dates
+
+      for (const date of datesToCheck) {
+        try {
+          const slots = await apiService.getAvailableTimeSlots(
+            teacherId,
+            subjectId,
+            date
+          );
+          const hasAvailableSlots = slots.some((slot) => !slot.isBooked);
+
+          if (!hasAvailableSlots && slots.length > 0) {
+            fullyBooked.push(date);
+          }
+        } catch (err) {
+          // If error checking slots, assume date is available
+          continue;
+        }
+      }
+
+      setFullyBookedDates(fullyBooked);
+    } catch (err) {
+      console.error('Error checking fully booked dates:', err);
     }
   };
 
@@ -166,6 +211,11 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
     const subject = subjects.find((s) => s.id === subjectId);
     setSelectedSubject(subject || null);
     setAvailableSlots([]);
+
+    // Check fully booked dates when subject changes
+    if (selectedTeacher && subject) {
+      checkFullyBookedDates(selectedTeacher.id, subject.id, availableDates);
+    }
   };
 
   const handleDateSelect = (date: string) => {
@@ -183,6 +233,13 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
           selectedDate
         );
         setAvailableSlots(slots);
+
+        // Also refresh the fully booked dates to update styling
+        checkFullyBookedDates(
+          selectedTeacher.id,
+          selectedSubject.id,
+          availableDates
+        );
       } catch (err) {
         console.error('Error refreshing slots:', err);
       } finally {
@@ -364,8 +421,12 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
                 const isAvailable = selectedTeacher
                   ? availableDates.includes(date.value)
                   : false;
+                const isFullyBooked = fullyBookedDates.includes(date.value);
                 const isDisabled =
-                  !selectedTeacher || !selectedSubject || !isAvailable;
+                  !selectedTeacher ||
+                  !selectedSubject ||
+                  !isAvailable ||
+                  isFullyBooked;
 
                 return (
                   <button
@@ -374,10 +435,14 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
                     className={`p-3 text-center border-2 rounded-lg transition-all duration-200 min-h-[70px] flex flex-col justify-center ${
                       selectedDate === date.value
                         ? 'border-blue-500 bg-blue-500 text-white shadow-lg transform scale-105'
-                        : date.isToday && isAvailable
+                        : date.isToday && isAvailable && !isFullyBooked
                         ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md'
-                        : isDisabled
+                        : isFullyBooked
+                        ? 'border-orange-200 bg-orange-100 text-orange-600 cursor-not-allowed opacity-70'
+                        : !isAvailable && selectedTeacher
                         ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        : !selectedTeacher || !selectedSubject
+                        ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md'
                     }`}
                     disabled={isDisabled}
@@ -390,6 +455,9 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
                     </div>
                     {!isAvailable && selectedTeacher && (
                       <div className="text-xs text-red-400 mt-1">N/A</div>
+                    )}
+                    {isFullyBooked && (
+                      <div className="text-xs text-orange-500 mt-1">Full</div>
                     )}
                   </button>
                 );
@@ -440,6 +508,26 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
                       </div>
                     </div>
                   </div>
+                  {/* Timezone Display */}
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between text-sm text-blue-700">
+                      <span>
+                        Your timezone:{' '}
+                        <strong>
+                          {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                        </strong>
+                      </span>
+                      <span>
+                        Current time:{' '}
+                        <strong>{new Date().toLocaleTimeString()}</strong>
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      All times are shown in your local timezone. Past time
+                      slots are automatically disabled.
+                    </p>
+                  </div>
+
                   <TimeSlotPicker
                     availableSlots={availableSlots}
                     onSelectSlot={handleSlotSelect}

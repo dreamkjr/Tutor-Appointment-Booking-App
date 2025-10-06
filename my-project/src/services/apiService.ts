@@ -264,8 +264,13 @@ class ApiService {
     subjectId: number,
     date: string
   ): Promise<AvailableSlot[]> {
+    // Get user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const response = await this.request<AvailableSlot[]>(
-      `/teachers/available-slots?tutorId=${tutorId}&subjectId=${subjectId}&date=${date}`
+      `/teachers/available-slots?tutorId=${tutorId}&subjectId=${subjectId}&date=${date}&timezone=${encodeURIComponent(
+        timezone
+      )}`
     );
     return response.data || [];
   }

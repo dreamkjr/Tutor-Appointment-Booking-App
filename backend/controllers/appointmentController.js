@@ -265,19 +265,38 @@ export const bookAppointment = async (req, res) => {
       throw new Error('Invalid date provided');
     }
 
-    // Use UTC to avoid timezone issues
-    const year = appointmentDate.getUTCFullYear();
-    const month = String(appointmentDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(appointmentDate.getUTCDate()).padStart(2, '0');
-    const hours = String(appointmentDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(appointmentDate.getUTCMinutes()).padStart(2, '0');
+    // Extract date and time - use the original dateTime string format if it's in the expected format
+    let dateStr, startTime, endTime;
 
-    const dateStr = `${year}-${month}-${day}`;
-    const startTime = `${hours}:${minutes}:00`;
+    if (typeof dateTime === 'string' && dateTime.includes('T')) {
+      // Parse the ISO string to extract date and time components
+      const [datePart, timePart] = dateTime.split('T');
+      dateStr = datePart;
 
-    // Calculate end time (1 hour session)
-    const endHour = (appointmentDate.getUTCHours() + 1) % 24;
-    const endTime = `${String(endHour).padStart(2, '0')}:${minutes}:00`;
+      // Extract time from the time part (remove Z suffix if present)
+      const timeOnly = timePart.replace('Z', '').split('.')[0];
+      startTime = timeOnly.length === 8 ? timeOnly : `${timeOnly}:00`;
+
+      // Calculate end time (1 hour session)
+      const startHour = parseInt(timeOnly.split(':')[0]);
+      const minutes = timeOnly.split(':')[1];
+      const endHour = startHour + 1;
+      endTime = `${String(endHour).padStart(2, '0')}:${minutes}:00`;
+    } else {
+      // Fallback: use local time methods instead of UTC to match available slots generation
+      const year = appointmentDate.getFullYear();
+      const month = String(appointmentDate.getMonth() + 1).padStart(2, '0');
+      const day = String(appointmentDate.getDate()).padStart(2, '0');
+      const hours = String(appointmentDate.getHours()).padStart(2, '0');
+      const minutes = String(appointmentDate.getMinutes()).padStart(2, '0');
+
+      dateStr = `${year}-${month}-${day}`;
+      startTime = `${hours}:${minutes}:00`;
+
+      // Calculate end time (1 hour session)
+      const endHour = (appointmentDate.getHours() + 1) % 24;
+      endTime = `${String(endHour).padStart(2, '0')}:${minutes}:00`;
+    }
 
     console.log('🕐 Time calculations:', {
       originalDateTime: dateTime,

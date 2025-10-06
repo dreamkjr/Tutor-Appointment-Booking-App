@@ -82,6 +82,7 @@ export interface TimeSlot {
   tutorId: number;
   subjectId: number;
   isBooked: boolean;
+  isPast?: boolean;
 }
 
 export interface AvailableSlot extends TimeSlot {

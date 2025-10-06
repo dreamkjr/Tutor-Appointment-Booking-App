@@ -291,7 +291,7 @@ export const deleteScheduleSlot = async (req, res) => {
 // Get available time slots for student booking
 export const getAvailableTimeSlots = async (req, res) => {
   try {
-    const { tutorId, subjectId, date } = req.query;
+    const { tutorId, subjectId, date, timezone } = req.query;
 
     if (!tutorId || !subjectId || !date) {
       return res.status(400).json({
@@ -353,9 +353,47 @@ export const getAvailableTimeSlots = async (req, res) => {
         const slotEnd = `${(hour + 1).toString().padStart(2, '0')}:00:00`;
 
         // Check if this slot is already booked (postgres.js converts to camelCase)
-        const isBooked = appointments.some(
+        const isBookedByAppointment = appointments.some(
           (apt) => apt.startTime === slotStart
         );
+
+        // Check if this slot is in the past (for current date only)
+        // If timezone is provided, use it; otherwise use server time
+        let isPastSlot = false;
+        if (timezone) {
+          try {
+            // Get current time in the user's timezone
+            const now = new Date();
+            const userTime = new Intl.DateTimeFormat('en-CA', {
+              timeZone: timezone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+            }).format(now);
+
+            const [datePart, timePart] = userTime.split(', ');
+            const userNow = new Date(`${datePart}T${timePart}`);
+            const slotDateTime = new Date(`${date}T${slotStart}`);
+            isPastSlot = slotDateTime <= userNow;
+          } catch (e) {
+            // Fallback to server time if timezone parsing fails
+            const now = new Date();
+            const slotDateTime = new Date(`${date}T${slotStart}`);
+            isPastSlot = slotDateTime <= now;
+          }
+        } else {
+          // Fallback to server time
+          const now = new Date();
+          const slotDateTime = new Date(`${date}T${slotStart}`);
+          isPastSlot = slotDateTime <= now;
+        }
+
+        // Mark as booked if either already booked OR in the past
+        const isBooked = isBookedByAppointment || isPastSlot;
 
         // Add all slots (both available and booked) with correct status
         availableSlots.push({
@@ -366,6 +404,7 @@ export const getAvailableTimeSlots = async (req, res) => {
           tutorId: parseInt(tutorId),
           subjectId: parseInt(subjectId),
           isBooked: isBooked,
+          isPast: isPastSlot, // Add flag to distinguish past slots from booked slots
         });
       }
     }

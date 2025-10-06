@@ -81,39 +81,53 @@ const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
             </h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {slots.map((slot: TimeSlot) => (
-              <button
-                key={slot.id}
-                onClick={() => (slot.isBooked ? null : onSelectSlot(slot))}
-                disabled={slot.isBooked}
-                className={`relative font-medium py-3 px-4 rounded-lg transition-all duration-200 text-center min-h-[60px] flex flex-col justify-center ${
-                  slot.isBooked
-                    ? 'bg-gray-100 border-2 border-gray-300 text-gray-500 cursor-not-allowed opacity-60 line-through'
-                    : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 hover:shadow-lg transform hover:scale-105 active:scale-95'
-                }`}
-                title={
-                  slot.isBooked
-                    ? 'This time slot is already booked'
-                    : 'Click to book this slot'
-                }
-              >
-                <span className="text-sm font-semibold">
-                  {formatTime(new Date(slot.dateTime))}
-                </span>
-                {slot.isBooked ? (
-                  <span className="text-xs mt-1 font-medium text-gray-400">
-                    Unavailable
+            {slots.map((slot: TimeSlot) => {
+              const isPastSlot = slot.isPast;
+              const isBooked = slot.isBooked && !isPastSlot;
+              const slotDateTime = new Date(slot.dateTime);
+
+              return (
+                <button
+                  key={slot.id}
+                  onClick={() => (slot.isBooked ? null : onSelectSlot(slot))}
+                  disabled={slot.isBooked}
+                  className={`relative font-medium py-3 px-4 rounded-lg transition-all duration-200 text-center min-h-[60px] flex flex-col justify-center ${
+                    isPastSlot
+                      ? 'bg-gray-200 border-2 border-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                      : isBooked
+                      ? 'bg-gray-100 border-2 border-gray-300 text-gray-500 cursor-not-allowed opacity-60 line-through'
+                      : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300 hover:shadow-lg transform hover:scale-105 active:scale-95'
+                  }`}
+                  title={
+                    isPastSlot
+                      ? 'This time slot has already passed'
+                      : isBooked
+                      ? 'This time slot is already booked'
+                      : 'Click to book this slot'
+                  }
+                >
+                  <span className="text-sm font-semibold">
+                    {formatTime(slotDateTime)}
                   </span>
-                ) : (
-                  <span className="text-xs mt-1 opacity-75">Available</span>
-                )}
-                {!slot.isBooked && (
-                  <div className="absolute top-1 right-1">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  </div>
-                )}
-              </button>
-            ))}
+                  {isPastSlot ? (
+                    <span className="text-xs mt-1 font-medium text-gray-500">
+                      Past
+                    </span>
+                  ) : isBooked ? (
+                    <span className="text-xs mt-1 font-medium text-gray-400">
+                      Booked
+                    </span>
+                  ) : (
+                    <span className="text-xs mt-1 opacity-75">Available</span>
+                  )}
+                  {!slot.isBooked && (
+                    <div className="absolute top-1 right-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}
