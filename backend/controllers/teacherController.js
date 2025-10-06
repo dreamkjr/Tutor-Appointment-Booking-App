@@ -357,17 +357,16 @@ export const getAvailableTimeSlots = async (req, res) => {
           (apt) => apt.startTime === slotStart
         );
 
-        if (!isBooked) {
-          availableSlots.push({
-            id: `${tutorId}-${subjectId}-${date}-${hour}`,
-            dateTime: `${date}T${slotStart}`,
-            startTime: slotStart,
-            endTime: slotEnd,
-            tutorId: parseInt(tutorId),
-            subjectId: parseInt(subjectId),
-            isBooked: false,
-          });
-        }
+        // Add all slots (both available and booked) with correct status
+        availableSlots.push({
+          id: `${tutorId}-${subjectId}-${date}-${hour}`,
+          dateTime: `${date}T${slotStart}`,
+          startTime: slotStart,
+          endTime: slotEnd,
+          tutorId: parseInt(tutorId),
+          subjectId: parseInt(subjectId),
+          isBooked: isBooked,
+        });
       }
     }
 
@@ -513,13 +512,18 @@ export const getTeacherAvailableDates = async (req, res) => {
       ORDER BY day_of_week
     `;
 
+    console.log(`🗓️ Teacher ${tutorId} schedules:`, schedules);
+
     // Convert day numbers to actual dates within the range
     const availableDates = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
 
     // Get array of available days (0 = Sunday, 1 = Monday, etc.)
-    const availableDays = schedules.map((s) => s.dayOfWeek || s.day_of_week);
+    const availableDays = schedules.map((s) =>
+      s.dayOfWeek !== undefined ? s.dayOfWeek : s.day_of_week
+    );
+    console.log(`📅 Available days for teacher ${tutorId}:`, availableDays);
 
     for (
       let date = new Date(start);

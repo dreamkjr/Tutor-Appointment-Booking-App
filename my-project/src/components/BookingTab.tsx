@@ -172,6 +172,25 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
     setSelectedDate(date);
   };
 
+  // Function to refresh available slots (can be called after booking)
+  const refreshSlots = async () => {
+    if (selectedTeacher && selectedSubject && selectedDate) {
+      try {
+        setLoadingSlots(true);
+        const slots = await apiService.getAvailableTimeSlots(
+          selectedTeacher.id,
+          selectedSubject.id,
+          selectedDate
+        );
+        setAvailableSlots(slots);
+      } catch (err) {
+        console.error('Error refreshing slots:', err);
+      } finally {
+        setLoadingSlots(false);
+      }
+    }
+  };
+
   const handleSlotSelect = (slot: AvailableSlot) => {
     if (selectedTeacher && selectedSubject) {
       // Ensure the slot has the correct subjectId from the selected subject
@@ -181,6 +200,9 @@ const BookingTab: React.FC<BookingTabProps> = ({ onBook }) => {
         tutorId: selectedTeacher.id,
       };
       onBook(enhancedSlot, selectedTeacher.name, selectedSubject.name);
+
+      // Refresh slots after booking (with a small delay to ensure backend is updated)
+      setTimeout(refreshSlots, 1000);
     }
   };
 
